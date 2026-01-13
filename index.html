@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WKNDEXPENSE PRO</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #9ba544;
+            --danger: #ff6b6b;
+            --success: #3e573d;
+            --dark: #3e573d;
+            --dark-card: #09161b;
+            --bg: #f1f5f9;
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: #1e293b; overflow-x: hidden; }
+
+        /* Login Overlay Style */
+        #login-page {
+            position: fixed; inset: 0; background: var(--dark-card);
+            display: flex; align-items: center; justify-content: center; z-index: 9999;
+        }
+        .login-box { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 90%; max-width: 400px; }
+        .google-btn {
+            background: white; border: 1px solid #dadce0; color: #3c4043; padding: 12px 24px;
+            border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center;
+            gap: 12px; cursor: pointer; width: 100%; transition: 0.2s; margin-top: 20px;
+        }
+
+        nav { 
+            background: var(--dark); color: white; padding: 0 20px; 
+            display: flex; align-items: center; justify-content: space-between; 
+            height: 65px; position: sticky; top: 0; z-index: 2000; 
+        }
+        .logo { font-weight: 800; font-size: 1.3rem; letter-spacing: -1px; }
+        .logo span { color: var(--primary); }
+
+        .nav-links { display: flex; gap: 15px; }
+        .nav-links span { cursor: pointer; font-weight: 600; font-size: 0.9rem; opacity: 0.7; padding: 20px 10px; }
+        .nav-links span.active { opacity: 1; border-bottom: 3px solid var(--primary); color: var(--primary); }
+
+        .hamburger { display: none; font-size: 1.8rem; cursor: pointer; user-select: none; }
+
+        @media (max-width: 768px) {
+            .nav-links { 
+                display: none; flex-direction: column; position: absolute; 
+                top: 65px; left: 0; width: 100%; background: var(--dark); 
+                padding: 10px 0; border-top: 1px solid #334155;
+            }
+            .nav-links.mobile-open { display: flex; }
+            .nav-links span { padding: 15px 25px; border-bottom: 1px solid #1e293b; }
+            .hamburger { display: block; }
+        }
+
+        .container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .view { display: none; animation: fadeIn 0.3s ease; }
+        .view.active { display: block; }
+
+        .dashboard-grid { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
+        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+        .card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .dark-card { background: var(--dark-card); color: white; border: none; }
+        h2 { margin-top: 0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 12px; }
+        .dark-card h2 { color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.1); }
+
+        .net-total { font-size: 2.2rem; font-weight: 800; color: #4ade80; margin: 5px 0; }
+        .channel-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+        .dark-card .channel-row { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .val { font-weight: 700; color: #1e293b; }
+        .dark-card .val { color: #f8fafc; }
+
+        .input-stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem; background: #fff; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
+        .photo-slot { aspect-ratio: 1/1; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; }
+        .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-slot::after { content: '+'; font-size: 1.2rem; color: #cbd5e1; }
+        .photo-slot.has-img::after { content: ''; }
+
+        .btn { border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: #fee2e2; color: var(--danger); font-size: 0.75rem; width: auto; padding: 5px 10px; border-radius: 6px;}
+
+        .table-wrap { overflow-x: auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { background: #f8fafc; text-align: left; padding: 15px; font-size: 0.75rem; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #eee;}
+        td { padding: 15px; border-top: 1px solid #f1f5f9; font-size: 0.9rem; }
+
+        .filter-section { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; border: 1px solid #e2e8f0; flex-wrap: wrap; }
+
+        .cool-alert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: var(--dark-card); color: white; padding: 15px 30px; border-radius: 50px; z-index: 10000; transition: 0.5s; border: 2px solid var(--primary); display: flex; gap: 10px; }
+        .cool-alert.show { top: 20px; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 4000; padding: 20px; }
+        .modal-content { background: white; padding: 30px; border-radius: 24px; width: 100%; max-width: 420px; text-align: center; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div id="login-page">
+    <div class="login-box">
+        <h1 style="margin:0; color:var(--dark); letter-spacing:-1px;">wknd<span>tracker</span></h1>
+        <p style="color:#64748b; margin-top:10px;">Private Crew Access Only</p>
+        <button class="google-btn" onclick="loginWithGoogle()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
+            Sign in with Google
+        </button>
+    </div>
+</div>
+
+<div id="cool-alert" class="cool-alert"><span id="alert-icon"></span> <span id="alert-msg"></span></div>
+
+<nav id="main-nav" style="display:none;">
+    <div class="logo">wknd<span>tracker</span></div>
+    <div class="hamburger" onclick="toggleNav()">☰</div>
+    <div class="nav-links" id="navLinks">
+        <span class="active" onclick="switchView('dashboard', this)">Dashboard</span>
+        <span onclick="switchView('daily', this)">Daily Report</span>
+        <span onclick="switchView('weekly', this)">Weekly Report</span>
+        <span onclick="switchView('monthly', this)">Monthly Report</span>
+        <span onclick="logout()" style="color:var(--danger)">Logout</span>
+    </div>
+</nav>
+
+<div class="container" id="app-content" style="display:none;">
+    <div id="dashboard" class="view active">
+        <div class="dashboard-grid">
+            <div class="side-col">
+                <div class="card dark-card">
+                    <h2>Overall Balance & Channels</h2>
+                    <div class="net-total" id="total-net" style="font-size: 1.8rem;">₱0.00</div>
+                    <div style="display:flex; justify-content: space-between; font-size: 0.7rem; color:#94a3b8; margin-bottom: 10px;">
+                        <span>All-Time Rev: <b id="total-rev" style="color:var(--success)">₱0</b></span>
+                        <span>All-Time Exp: <b id="total-exp" style="color:var(--danger)">₱0</b></span>
+                    </div>
+                    <div id="channel-stats-overall"></div>
+                </div>
+
+                <div class="card">
+                    <h2 style="color: #64748b;">Daily Net (Today)</h2>
+                    <div class="net-total" id="daily-net" style="font-size: 1.8rem; color: var(--success);">₱0.00</div>
+                    <div style="display:flex; justify-content: space-between; font-size: 0.75rem; color:#64748b; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                        <span>Rev: <b id="daily-rev" style="color:var(--success)">₱0</b></span>
+                        <span>Exp: <b id="daily-exp" style="color:var(--danger)">₱0</b></span>
+                    </div>
+                    <div id="channel-stats-daily"></div>
+                </div>
+
+                <div class="card">
+                    <h2 style="color: #64748b;">POS Reference</h2>
+                    <div id="loyverse-display" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; color: #1e293b;">₱0.00</div>
+                    <input type="number" id="loyverse-input" placeholder="New Total" style="padding: 8px;">
+                    <button class="btn btn-primary" style="padding:8px; font-size: 0.8rem;" onclick="updateLoyverse()">Update Target</button>
+                </div>
+            </div>
+
+            <div class="main-col">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div class="card">
+                        <h2 style="color: #64748b;">Post Sales</h2>
+                        <div class="input-stack">
+                            <input type="number" id="rev-amt" placeholder="Amount (₱)">
+                            <input type="text" id="rev-staff" placeholder="Admin Reference Name">
+                            <select id="rev-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option></select>
+                        </div>
+                        <label style="font-size: 0.65rem; color: #94a3b8; margin-bottom: 5px; display: block;">RECEIPT PHOTOS (MAX 4)</label>
+                        <div class="photo-grid">
+                            <div class="photo-slot" onclick="clickInput(0)" id="slot-0"></div>
+                            <div class="photo-slot" onclick="clickInput(1)" id="slot-1"></div>
+                            <div class="photo-slot" onclick="clickInput(2)" id="slot-2"></div>
+                            <div class="photo-slot" onclick="clickInput(3)" id="slot-3"></div>
+                        </div>
+                        <input type="file" id="photo-input" hidden accept="image/*" onchange="handlePhoto(this)">
+                        <button class="btn btn-success" onclick="confirmEntry('REVENUE')">Add Revenue</button>
+                    </div>
+                    <div class="card">
+                        <h2 style="color: #64748b;">Post Expense</h2>
+                        <div class="input-stack">
+                            <input type="number" id="exp-amt" placeholder="Amount (₱)">
+                            <input type="text" id="exp-desc" placeholder="Details">
+                            <input type="text" id="exp-staff" placeholder="Admin Reference Name">
+                            <select id="exp-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option></select>
+                        </div>
+                        <button class="btn btn-primary" onclick="confirmEntry('EXPENSE')">Add Expense</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 style="color: #64748b;">Recent Transactions</h2>
+                    <div id="log-list" style="max-height:500px; overflow-y:auto;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="report" class="view">
+        <div class="report-header">
+            <h1 id="rep-title" style="margin:0">Reports</h1>
+            <button class="btn btn-primary" style="width:auto; padding:10px 30px;" onclick="window.print()">Print PDF</button>
+        </div>
+        <div class="filter-section">
+            <label id="filter-label" style="font-weight: bold; font-size: 0.9rem;"></label>
+            <input type="date" id="filter-date" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
+            <input type="month" id="filter-month" style="width: auto; margin-bottom: 0; display: none;" onchange="updateReportFilter()">
+        </div>
+        <div id="rep-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:20px;"></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Date & Time</th><th>Type</th><th>Admin (Input)</th><th>Verified User</th><th>Details</th><th>Channel</th><th>In</th><th>Out</th><th>Receipts</th></tr></thead>
+                <tbody id="rep-table"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modal" class="modal"><div class="modal-content"><h3 id="m-title"></h3><div id="m-body" style="text-align:left; background:#f8fafc; padding:20px; border-radius:15px; margin:20px 0;"></div><div id="m-imgs" style="display:flex; gap:5px; margin-bottom:15px; justify-content:center;"></div><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closeModal()">Cancel</button><button id="m-confirm" class="btn btn-primary">Confirm</button></div></div></div>
+<div id="pwd-modal" class="modal"><div class="modal-content"><h3>Admin Security</h3><p style="font-size:0.8rem; opacity:0.6;">Password Required</p><input type="password" id="p-input" style="text-align:center; margin-bottom:15px;"><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closePwd()">Cancel</button><button id="p-confirm" class="btn btn-success">Unlock</button></div></div></div>
+
+<script>
+    // --- SUPABASE CONFIG ---
+    const S_URL = "https://jhoftcoroyjusugewowb.supabase.co"; 
+    const S_KEY = "sb_publishable_VzAlTOn_of3qNk4KWcK77A_Gj1dyBU7";
+    const _supabase = supabase.createClient(S_URL, S_KEY);
+
+    const KEY = "admin";
+    let loggedInUser = null;
+    let db = { chans: {Cash:0, GCash:0, Maya:0, BPI:0}, logs: [], pos: localStorage.getItem('wknd_pos') || 0 };
+    let currentReportType = 'weekly';
+    let tempPhotos = [];
+    let currentSlot = 0;
+
+    // --- AUTH LOGIC ---
+    async function loginWithGoogle() {
+        const { error } = await _supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: window.location.origin }
+        });
+        if (error) notify("Login Failed", "❌");
+    }
+
+    async function checkUser() {
+        const { data: { user } } = await _supabase.auth.getUser();
+        if (user) {
+            loggedInUser = user;
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('main-nav').style.display = 'flex';
+            document.getElementById('app-content').style.display = 'block';
+            fetchCloudData();
+        }
+    }
+
+    async function logout() {
+        await _supabase.auth.signOut();
+        location.reload();
+    }
+
+    // --- CLOUD LOGIC ---
+    async function fetchCloudData() {
+        const { data, error } = await _supabase.from('transactions').select('*').order('id', { ascending: false });
+        if (!error) {
+            db.logs = data;
+            db.chans = {Cash:0, GCash:0, Maya:0, BPI:0};
+            data.forEach(l => { if(l.type === 'REVENUE') db.chans[l.chan] += l.amt; });
+            sync();
+        }
+    }
+
+    async function uploadPhoto(base64) {
+        try {
+            const blob = await (await fetch(base64)).blob();
+            const fileName = `receipt_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+            const { data, error } = await _supabase.storage.from('receipts').upload(`public/${fileName}`, blob);
+            if (error) throw error;
+            return _supabase.storage.from('receipts').getPublicUrl(`public/${fileName}`).data.publicUrl;
+        } catch (e) { return null; }
+    }
+
+    function toggleNav() { document.getElementById('navLinks').classList.toggle('mobile-open'); }
+
+    function switchView(id, el) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+        document.getElementById(id === 'dashboard' ? 'dashboard' : 'report').classList.add('active');
+        el.classList.add('active');
+        if(id !== 'dashboard') { currentReportType = id.replace(' Report', '').toLowerCase(); setupFilterUI(currentReportType); }
+        document.getElementById('navLinks').classList.remove('mobile-open');
+    }
+
+    function clickInput(slot) { currentSlot = slot; document.getElementById('photo-input').click(); }
+    function handlePhoto(input) {
+        if(!input.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            tempPhotos[currentSlot] = e.target.result;
+            document.getElementById(`slot-${currentSlot}`).innerHTML = `<img src="${e.target.result}">`;
+            document.getElementById(`slot-${currentSlot}`).classList.add('has-img');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function setupFilterUI(type) {
+        const dIn = document.getElementById('filter-date');
+        const mIn = document.getElementById('filter-month');
+        const lbl = document.getElementById('filter-label');
+        const today = new Date().toISOString().split('T')[0];
+        if(type === 'monthly') { lbl.innerText = "Select Month:"; dIn.style.display="none"; mIn.style.display="block"; mIn.value=today.substring(0,7); }
+        else { lbl.innerText = type === 'daily' ? "Select Day:" : "Select Start Date:"; dIn.style.display="block"; mIn.style.display="none"; dIn.value=today; }
+        buildReport();
+    }
+
+    function updateReportFilter() { buildReport(); }
+
+    function confirmEntry(type) {
+        let amt = parseFloat(document.getElementById(type === 'REVENUE' ? 'rev-amt' : 'exp-amt').value);
+        let staffInput = document.getElementById(type === 'REVENUE' ? 'rev-staff' : 'exp-staff').value;
+        let chan = document.getElementById(type === 'REVENUE' ? 'rev-channel' : 'exp-channel').value;
+        let desc = type === 'REVENUE' ? "Daily Sales Inflow" : document.getElementById('exp-desc').value;
+
+        if(!amt || !staffInput) return notify("Fill all fields!", "⚠️");
+        
+        const now = new Date();
+        const googleName = loggedInUser.user_metadata.full_name || "Unknown Google User";
+
+        document.getElementById('m-title').innerText = "Confirm " + type;
+        document.getElementById('m-body').innerHTML = `
+            <b>Amt:</b> ₱${amt.toLocaleString()}<br>
+            <b>Staff (Typed):</b> ${staffInput}<br><br>
+            <small style="color:#64748b">
+                <b>Verified User:</b> ${googleName}<br>
+                <b>Verified Email:</b> ${loggedInUser.email}
+            </small>`;
+        
+        const imgContainer = document.getElementById('m-imgs');
+        imgContainer.innerHTML = '';
+        tempPhotos.forEach(p => { if(p) imgContainer.innerHTML += `<img src="${p}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">`; });
+
+        document.getElementById('modal').style.display = 'flex';
+        document.getElementById('m-confirm').onclick = async () => {
+            notify("Syncing to Cloud...", "⏳");
+            
+            let uploadedUrls = [];
+            for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) uploadedUrls.push(url); } }
+
+            const entry = { 
+                type, amt, chan, desc, 
+                staff: staffInput, 
+                auth_user: loggedInUser.email,
+                google_name: googleName,
+                photos: uploadedUrls, 
+                time: now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), 
+                date: now.toLocaleDateString(), 
+                isoDate: now.toISOString().split('T')[0] 
+            };
+            
+            const { error } = await _supabase.from('transactions').insert([entry]);
+            if (!error) {
+                fetchCloudData(); closeModal(); notify("Cloud Synced!", "✅"); clearForm();
+            } else { notify("Error Saving", "❌"); }
+        };
+    }
+
+    function clearForm() {
+        document.getElementById('rev-amt').value=''; document.getElementById('exp-amt').value=''; document.getElementById('exp-desc').value='';
+        document.getElementById('rev-staff').value=''; document.getElementById('exp-staff').value='';
+        tempPhotos = [];
+        for(let i=0; i<4; i++) { document.getElementById(`slot-${i}`).innerHTML = ''; document.getElementById(`slot-${i}`).classList.remove('has-img'); }
+    }
+
+    function buildReport() {
+        const table = document.getElementById('rep-table'); table.innerHTML = '';
+        let tr = 0, te = 0;
+        const dVal = document.getElementById('filter-date').value;
+        const mVal = document.getElementById('filter-month').value;
+
+        db.logs.filter(l => {
+            if (currentReportType === 'weekly') {
+                const s = new Date(dVal); const e = new Date(dVal); e.setDate(s.getDate()+7);
+                const ld = new Date(l.isoDate); return ld >= s && ld < e;
+            } else if (currentReportType === 'daily') { return l.isoDate === dVal; }
+            else return l.isoDate.startsWith(mVal);
+        }).sort((a,b)=>b.id-a.id).forEach(l => {
+            if(l.type==='REVENUE') tr+=l.amt; else te+=l.amt;
+            let photoHtml = '';
+            if(l.photos) l.photos.forEach(p => { if(p) photoHtml += `<a href="${p}" target="_blank"><img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;"></a>`; });
+
+            table.innerHTML += `
+                <tr>
+                    <td>${l.date}<br><small>${l.time}</small></td>
+                    <td><b>${l.type}</b></td>
+                    <td>${l.staff}</td>
+                    <td><small style="color:var(--primary)">${l.google_name}</small><br><small style="font-size:0.6rem;">${l.auth_user}</small></td>
+                    <td>${l.desc}</td>
+                    <td>${l.chan}</td>
+                    <td>${l.type==='REVENUE'?'₱'+l.amt.toLocaleString():'-'}</td>
+                    <td>${l.type==='EXPENSE'?'₱'+l.amt.toLocaleString():'-'}</td>
+                    <td>${photoHtml}</td>
+                </tr>`;
+        });
+        document.getElementById('rep-cards').innerHTML = `<div class="card dark-card"><h2>Period Revenue</h2><div class="net-total">₱${tr.toLocaleString()}</div></div><div class="card dark-card"><h2>Period Expenses</h2><div class="net-total" style="color:var(--danger)">₱${te.toLocaleString()}</div></div><div class="card dark-card"><h2>Period Net</h2><div class="net-total" style="color:#4ade80">₱${(tr-te).toLocaleString()}</div></div>`;
+    }
+
+    function updateLoyverse() {
+        db.pos = document.getElementById('loyverse-input').value;
+        localStorage.setItem('wknd_pos', db.pos);
+        document.getElementById('loyverse-input').value=''; sync(); notify("Updated!", "📈");
+    }
+
+    function sync() {
+        let oRev = 0; let oExp = db.logs.filter(l=>l.type==='EXPENSE').reduce((s,l)=>s+l.amt,0);
+        const overallDiv = document.getElementById('channel-stats-overall'); overallDiv.innerHTML='';
+        for(let [k,v] of Object.entries(db.chans)) {
+            overallDiv.innerHTML += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`;
+            oRev += v;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        const dLogs = db.logs.filter(l => l.isoDate === today);
+        const dRev = dLogs.filter(l => l.type==='REVENUE').reduce((s,l)=>s+l.amt,0);
+        const dExp = dLogs.filter(l => l.type==='EXPENSE').reduce((s,l)=>s+l.amt,0);
+
+        const dailyDiv = document.getElementById('channel-stats-daily'); dailyDiv.innerHTML = '';
+        ['Cash', 'GCash', 'Maya', 'BPI'].forEach(c => {
+            const amt = dLogs.filter(l=>l.chan===c && l.type==='REVENUE').reduce((s,l)=>s+l.amt,0);
+            dailyDiv.innerHTML += `<div class="channel-row"><span>${c}</span> <span class="val" style="color:#1e293b">₱${amt.toLocaleString()}</span></div>`;
+        });
+
+        document.getElementById('total-net').innerText = "₱"+(oRev-oExp).toLocaleString();
+        document.getElementById('total-rev').innerText = "₱"+oRev.toLocaleString();
+        document.getElementById('total-exp').innerText = "₱"+oExp.toLocaleString();
+        document.getElementById('daily-net').innerText = "₱"+(dRev-dExp).toLocaleString();
+        document.getElementById('daily-rev').innerText = "₱"+dRev.toLocaleString();
+        document.getElementById('daily-exp').innerText = "₱"+dExp.toLocaleString();
+        
+        const pd = document.getElementById('loyverse-display');
+        pd.innerText = "₱"+parseFloat(db.pos||0).toLocaleString();
+        pd.style.color = (oRev === parseFloat(db.pos)) ? "#4ade80" : "#1e293b";
+
+        const log = document.getElementById('log-list'); log.innerHTML = '';
+        db.logs.slice(0,20).forEach((l, i) => {
+            log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div style="color:#1e293b"><b>${l.type[0]}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff}</small></div><div style="text-align:right"><b>₱${l.amt.toLocaleString()}</b><br><button class="btn-danger" style="margin-top:5px" onclick="askPwd('del', ${l.id})">Delete</button></div></div>`;
+        });
+    }
+
+    function askPwd(act, targetId) {
+        document.getElementById('pwd-modal').style.display = 'flex';
+        document.getElementById('p-confirm').onclick = async () => {
+            if(document.getElementById('p-input').value === KEY) {
+                if(act === 'reset') { await _supabase.from('transactions').delete().neq('id', 0); location.reload(); }
+                else { await _supabase.from('transactions').delete().eq('id', targetId); fetchCloudData(); }
+                closePwd(); notify("Confirmed!", "🔓");
+            } else notify("Wrong!", "❌");
+        };
+    }
+
+    function notify(m, i) { const a = document.getElementById('cool-alert'); document.getElementById('alert-icon').innerText = i; document.getElementById('alert-msg').innerText = m; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'), 3000); }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    function closePwd() { document.getElementById('pwd-modal').style.display = 'none'; document.getElementById('p-input').value=''; }
+    
+    checkUser();
+</script>
+</body>
+</html>
