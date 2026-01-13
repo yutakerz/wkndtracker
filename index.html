@@ -267,14 +267,26 @@
         location.reload();
     }
 
-    // --- CLOUD LOGIC ---
+    // --- CLOUD LOGIC (UPDATED FOR BETTER SYNC) ---
     async function fetchCloudData() {
         const { data, error } = await _supabase.from('transactions').select('*').order('id', { ascending: false });
         if (!error) {
             db.logs = data;
+            // Clear totals before recalculating
             db.chans = {Cash:0, GCash:0, Maya:0, BPI:0};
-            data.forEach(l => { if(l.type === 'REVENUE') db.chans[l.chan] += l.amt; });
+            
+            data.forEach(l => { 
+                const amount = Number(l.amt);
+                const type = l.type.toUpperCase();
+                const chan = l.chan; // Ensure this matches Cash/GCash etc exactly
+
+                if(type === 'REVENUE' && db.chans.hasOwnProperty(chan)) {
+                    db.chans[chan] += amount;
+                }
+            });
             sync();
+        } else {
+            notify("Fetch Error", "❌");
         }
     }
 
@@ -295,7 +307,10 @@
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById(id === 'dashboard' ? 'dashboard' : 'report').classList.add('active');
         el.classList.add('active');
-        if(id !== 'dashboard') { currentReportType = id.replace(' Report', '').toLowerCase(); setupFilterUI(currentReportType); }
+        if(id !== 'dashboard') { 
+            currentReportType = id.replace(' Report', '').toLowerCase(); 
+            setupFilterUI(currentReportType); 
+        }
         document.getElementById('navLinks').classList.remove('mobile-open');
     }
 
@@ -316,8 +331,17 @@
         const mIn = document.getElementById('filter-month');
         const lbl = document.getElementById('filter-label');
         const today = new Date().toISOString().split('T')[0];
-        if(type === 'monthly') { lbl.innerText = "Select Month:"; dIn.style.display="none"; mIn.style.display="block"; mIn.value=today.substring(0,7); }
-        else { lbl.innerText = type === 'daily' ? "Select Day:" : "Select Start Date:"; dIn.style.display="block"; mIn.style.display="none"; dIn.value=today; }
+        if(type === 'monthly') { 
+            lbl.innerText = "Select Month:"; 
+            dIn.style.display="none"; 
+            mIn.style.display="block"; 
+            mIn.value=today.substring(0,7); 
+        } else { 
+            lbl.innerText = type === 'daily' ? "Select Day:" : "Select Start Date:"; 
+            dIn.style.display="block"; 
+            mIn.style.display="none"; 
+            dIn.value=today; 
+        }
         buildReport();
     }
 
@@ -332,7 +356,7 @@
         if(!amt || !staffInput) return notify("Fill all fields!", "⚠️");
         
         const now = new Date();
-        const googleName = loggedInUser.user_metadata.full_name || "Unknown Google User";
+        const googleName = loggedInUser.user_metadata.full_name || "Unknown User";
 
         document.getElementById('m-title').innerText = "Confirm " + type;
         document.getElementById('m-body').innerHTML = `
@@ -355,7 +379,8 @@
             for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) uploadedUrls.push(url); } }
 
             const entry = { 
-                type, amt, chan, desc, 
+                type: type.toUpperCase(), 
+                amt, chan, desc, 
                 staff: staffInput, 
                 auth_user: loggedInUser.email,
                 google_name: googleName,
@@ -392,9 +417,13 @@
             } else if (currentReportType === 'daily') { return l.isoDate === dVal; }
             else return l.isoDate.startsWith(mVal);
         }).sort((a,b)=>b.id-a.id).forEach(l => {
-            if(l.type==='REVENUE') tr+=l.amt; else te+=l.amt;
+            const amount = Number(l.amt);
+            if(l.type.toUpperCase()==='REVENUE') tr+=amount; else te+=amount;
+            
             let photoHtml = '';
-            if(l.photos) l.photos.forEach(p => { if(p) photoHtml += `<a href="${p}" target="_blank"><img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;"></a>`; });
+            if(l.photos && l.photos.length > 0) {
+                l.photos.forEach(p => { if(p) photoHtml += `<a href="${p}" target="_blank"><img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;"></a>`; });
+            }
 
             table.innerHTML += `
                 <tr>
@@ -404,8 +433,8 @@
                     <td><small style="color:var(--primary)">${l.google_name}</small><br><small style="font-size:0.6rem;">${l.auth_user}</small></td>
                     <td>${l.desc}</td>
                     <td>${l.chan}</td>
-                    <td>${l.type==='REVENUE'?'₱'+l.amt.toLocaleString():'-'}</td>
-                    <td>${l.type==='EXPENSE'?'₱'+l.amt.toLocaleString():'-'}</td>
+                    <td>${l.type.toUpperCase()==='REVENUE'?'₱'+amount.toLocaleString():'-'}</td>
+                    <td>${l.type.toUpperCase()==='EXPENSE'?'₱'+amount.toLocaleString():'-'}</td>
                     <td>${photoHtml}</td>
                 </tr>`;
         });
@@ -418,25 +447,31 @@
         document.getElementById('loyverse-input').value=''; sync(); notify("Updated!", "📈");
     }
 
+    // --- SYNC UI LOGIC (CRITICAL UPDATES HERE) ---
     function sync() {
-        let oRev = 0; let oExp = db.logs.filter(l=>l.type==='EXPENSE').reduce((s,l)=>s+l.amt,0);
+        // Overall Totals
+        let oRev = 0; 
+        let oExp = db.logs.filter(l => l.type.toUpperCase() === 'EXPENSE').reduce((s, l) => s + Number(l.amt), 0);
+        
         const overallDiv = document.getElementById('channel-stats-overall'); overallDiv.innerHTML='';
         for(let [k,v] of Object.entries(db.chans)) {
             overallDiv.innerHTML += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`;
             oRev += v;
         }
 
+        // Daily Totals (Today)
         const today = new Date().toISOString().split('T')[0];
         const dLogs = db.logs.filter(l => l.isoDate === today);
-        const dRev = dLogs.filter(l => l.type==='REVENUE').reduce((s,l)=>s+l.amt,0);
-        const dExp = dLogs.filter(l => l.type==='EXPENSE').reduce((s,l)=>s+l.amt,0);
+        const dRev = dLogs.filter(l => l.type.toUpperCase() === 'REVENUE').reduce((s,l) => s + Number(l.amt), 0);
+        const dExp = dLogs.filter(l => l.type.toUpperCase() === 'EXPENSE').reduce((s,l) => s + Number(l.amt), 0);
 
         const dailyDiv = document.getElementById('channel-stats-daily'); dailyDiv.innerHTML = '';
         ['Cash', 'GCash', 'Maya', 'BPI'].forEach(c => {
-            const amt = dLogs.filter(l=>l.chan===c && l.type==='REVENUE').reduce((s,l)=>s+l.amt,0);
+            const amt = dLogs.filter(l=>l.chan===c && l.type.toUpperCase()==='REVENUE').reduce((s,l)=>s+Number(l.amt),0);
             dailyDiv.innerHTML += `<div class="channel-row"><span>${c}</span> <span class="val" style="color:#1e293b">₱${amt.toLocaleString()}</span></div>`;
         });
 
+        // Update Big Numbers
         document.getElementById('total-net').innerText = "₱"+(oRev-oExp).toLocaleString();
         document.getElementById('total-rev').innerText = "₱"+oRev.toLocaleString();
         document.getElementById('total-exp').innerText = "₱"+oExp.toLocaleString();
@@ -444,14 +479,19 @@
         document.getElementById('daily-rev').innerText = "₱"+dRev.toLocaleString();
         document.getElementById('daily-exp').innerText = "₱"+dExp.toLocaleString();
         
+        // POS Check
         const pd = document.getElementById('loyverse-display');
         pd.innerText = "₱"+parseFloat(db.pos||0).toLocaleString();
         pd.style.color = (oRev === parseFloat(db.pos)) ? "#4ade80" : "#1e293b";
 
+        // Recent Logs
         const log = document.getElementById('log-list'); log.innerHTML = '';
         db.logs.slice(0,20).forEach((l, i) => {
-            log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div style="color:#1e293b"><b>${l.type[0]}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff}</small></div><div style="text-align:right"><b>₱${l.amt.toLocaleString()}</b><br><button class="btn-danger" style="margin-top:5px" onclick="askPwd('del', ${l.id})">Delete</button></div></div>`;
+            log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div style="color:#1e293b"><b>${l.type[0]}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff}</small></div><div style="text-align:right"><b>₱${Number(l.amt).toLocaleString()}</b><br><button class="btn-danger" style="margin-top:5px" onclick="askPwd('del', ${l.id})">Delete</button></div></div>`;
         });
+
+        // Force Reports to update if view is active
+        if(document.getElementById('report').classList.contains('active')) buildReport();
     }
 
     function askPwd(act, targetId) {
