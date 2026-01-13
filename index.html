@@ -267,21 +267,22 @@
         location.reload();
     }
 
-    // --- CLOUD LOGIC (UPDATED FOR BETTER SYNC) ---
+    // --- UPDATED CLOUD LOGIC FOR ACCURATE CALCULATIONS ---
     async function fetchCloudData() {
         const { data, error } = await _supabase.from('transactions').select('*').order('id', { ascending: false });
-        if (!error) {
+        if (!error && data) {
             db.logs = data;
-            // Clear totals before recalculating
-            db.chans = {Cash:0, GCash:0, Maya:0, BPI:0};
+            db.chans = { Cash: 0, GCash: 0, Maya: 0, BPI: 0 };
             
             data.forEach(l => { 
-                const amount = Number(l.amt);
-                const type = l.type.toUpperCase();
-                const chan = l.chan; // Ensure this matches Cash/GCash etc exactly
+                const val = parseFloat(l.amt) || 0;
+                const type = l.type ? l.type.trim().toUpperCase() : "";
+                const chan = l.chan ? l.chan.trim() : "";
 
-                if(type === 'REVENUE' && db.chans.hasOwnProperty(chan)) {
-                    db.chans[chan] += amount;
+                if (type === "REVENUE") {
+                    if (db.chans.hasOwnProperty(chan)) {
+                        db.chans[chan] += val;
+                    }
                 }
             });
             sync();
@@ -417,8 +418,10 @@
             } else if (currentReportType === 'daily') { return l.isoDate === dVal; }
             else return l.isoDate.startsWith(mVal);
         }).sort((a,b)=>b.id-a.id).forEach(l => {
-            const amount = Number(l.amt);
-            if(l.type.toUpperCase()==='REVENUE') tr+=amount; else te+=amount;
+            const val = parseFloat(l.amt) || 0;
+            const type = l.type ? l.type.trim().toUpperCase() : "";
+            
+            if(type === "REVENUE") tr += val; else te += val;
             
             let photoHtml = '';
             if(l.photos && l.photos.length > 0) {
@@ -433,8 +436,8 @@
                     <td><small style="color:var(--primary)">${l.google_name}</small><br><small style="font-size:0.6rem;">${l.auth_user}</small></td>
                     <td>${l.desc}</td>
                     <td>${l.chan}</td>
-                    <td>${l.type.toUpperCase()==='REVENUE'?'₱'+amount.toLocaleString():'-'}</td>
-                    <td>${l.type.toUpperCase()==='EXPENSE'?'₱'+amount.toLocaleString():'-'}</td>
+                    <td>${type === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td>
+                    <td>${type === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td>
                     <td>${photoHtml}</td>
                 </tr>`;
         });
@@ -447,50 +450,57 @@
         document.getElementById('loyverse-input').value=''; sync(); notify("Updated!", "📈");
     }
 
-    // --- SYNC UI LOGIC (CRITICAL UPDATES HERE) ---
     function sync() {
-        // Overall Totals
-        let oRev = 0; 
-        let oExp = db.logs.filter(l => l.type.toUpperCase() === 'EXPENSE').reduce((s, l) => s + Number(l.amt), 0);
-        
+        let totalRevenue = 0;
+        let totalExpense = 0;
+
+        db.logs.forEach(l => {
+            const val = parseFloat(l.amt) || 0;
+            const type = l.type ? l.type.trim().toUpperCase() : "";
+            if (type === "REVENUE") totalRevenue += val;
+            if (type === "EXPENSE") totalExpense += val;
+        });
+
         const overallDiv = document.getElementById('channel-stats-overall'); overallDiv.innerHTML='';
         for(let [k,v] of Object.entries(db.chans)) {
             overallDiv.innerHTML += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`;
-            oRev += v;
         }
 
-        // Daily Totals (Today)
         const today = new Date().toISOString().split('T')[0];
         const dLogs = db.logs.filter(l => l.isoDate === today);
-        const dRev = dLogs.filter(l => l.type.toUpperCase() === 'REVENUE').reduce((s,l) => s + Number(l.amt), 0);
-        const dExp = dLogs.filter(l => l.type.toUpperCase() === 'EXPENSE').reduce((s,l) => s + Number(l.amt), 0);
+        let dRev = 0, dExp = 0;
+
+        dLogs.forEach(l => {
+            const val = parseFloat(l.amt) || 0;
+            const type = l.type ? l.type.trim().toUpperCase() : "";
+            if (type === "REVENUE") dRev += val;
+            if (type === "EXPENSE") dExp += val;
+        });
 
         const dailyDiv = document.getElementById('channel-stats-daily'); dailyDiv.innerHTML = '';
         ['Cash', 'GCash', 'Maya', 'BPI'].forEach(c => {
-            const amt = dLogs.filter(l=>l.chan===c && l.type.toUpperCase()==='REVENUE').reduce((s,l)=>s+Number(l.amt),0);
+            const amt = dLogs.filter(l => l.chan === c && l.type.toUpperCase() === 'REVENUE').reduce((s,l) => s + (parseFloat(l.amt) || 0), 0);
             dailyDiv.innerHTML += `<div class="channel-row"><span>${c}</span> <span class="val" style="color:#1e293b">₱${amt.toLocaleString()}</span></div>`;
         });
 
-        // Update Big Numbers
-        document.getElementById('total-net').innerText = "₱"+(oRev-oExp).toLocaleString();
-        document.getElementById('total-rev').innerText = "₱"+oRev.toLocaleString();
-        document.getElementById('total-exp').innerText = "₱"+oExp.toLocaleString();
+        document.getElementById('total-net').innerText = "₱"+(totalRevenue - totalExpense).toLocaleString();
+        document.getElementById('total-rev').innerText = "₱"+totalRevenue.toLocaleString();
+        document.getElementById('total-exp').innerText = "₱"+totalExpense.toLocaleString();
         document.getElementById('daily-net').innerText = "₱"+(dRev-dExp).toLocaleString();
         document.getElementById('daily-rev').innerText = "₱"+dRev.toLocaleString();
         document.getElementById('daily-exp').innerText = "₱"+dExp.toLocaleString();
         
-        // POS Check
         const pd = document.getElementById('loyverse-display');
         pd.innerText = "₱"+parseFloat(db.pos||0).toLocaleString();
-        pd.style.color = (oRev === parseFloat(db.pos)) ? "#4ade80" : "#1e293b";
+        pd.style.color = (totalRevenue === parseFloat(db.pos)) ? "#4ade80" : "#1e293b";
 
-        // Recent Logs
         const log = document.getElementById('log-list'); log.innerHTML = '';
         db.logs.slice(0,20).forEach((l, i) => {
-            log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div style="color:#1e293b"><b>${l.type[0]}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff}</small></div><div style="text-align:right"><b>₱${Number(l.amt).toLocaleString()}</b><br><button class="btn-danger" style="margin-top:5px" onclick="askPwd('del', ${l.id})">Delete</button></div></div>`;
+            const val = parseFloat(l.amt) || 0;
+            const typeChar = l.type ? l.type.trim().toUpperCase()[0] : "?";
+            log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div style="color:#1e293b"><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br><button class="btn-danger" style="margin-top:5px" onclick="askPwd('del', ${l.id})">Delete</button></div></div>`;
         });
 
-        // Force Reports to update if view is active
         if(document.getElementById('report').classList.contains('active')) buildReport();
     }
 
