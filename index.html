@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WKNDEXPENSE PRO</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,6 +20,14 @@
             --dark: #3e573d;
             --dark-card: #09161b;
             --bg: #f1f5f9;
+        }
+
+        /* Pull-to-Refresh & PWA Scroll Fix */
+        html, body { 
+            overscroll-behavior-y: contain; /* Enables native pull-to-refresh feel */
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         * { box-sizing: border-box; }
@@ -41,6 +49,7 @@
             background: var(--dark); color: white; padding: 0 20px; 
             display: flex; align-items: center; justify-content: space-between; 
             height: 65px; position: sticky; top: 0; z-index: 2000; 
+            padding-top: env(safe-area-inset-top); /* iPhone Notch support */
         }
         .logo { font-weight: 800; font-size: 1.3rem; letter-spacing: -1px; }
         .logo span { color: var(--primary); }
@@ -259,7 +268,18 @@
             document.getElementById('main-nav').style.display = 'flex';
             document.getElementById('app-content').style.display = 'block';
             fetchCloudData();
+            setupRealtime(); // Enable "Live" updates
         }
+    }
+
+    // --- REALTIME LISTENER (NEW) ---
+    function setupRealtime() {
+        _supabase
+            .channel('any')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+                fetchCloudData(); // Automatically fetch whenever ANY change happens
+            })
+            .subscribe();
     }
 
     async function logout() {
@@ -267,27 +287,19 @@
         location.reload();
     }
 
-    // --- UPDATED CLOUD LOGIC FOR ACCURATE CALCULATIONS ---
+    // --- CLOUD LOGIC ---
     async function fetchCloudData() {
         const { data, error } = await _supabase.from('transactions').select('*').order('id', { ascending: false });
         if (!error && data) {
             db.logs = data;
             db.chans = { Cash: 0, GCash: 0, Maya: 0, BPI: 0 };
-            
             data.forEach(l => { 
-                const val = parseFloat(l.amt) || 0;
-                const type = l.type ? l.type.trim().toUpperCase() : "";
-                const chan = l.chan ? l.chan.trim() : "";
-
-                if (type === "REVENUE") {
-                    if (db.chans.hasOwnProperty(chan)) {
-                        db.chans[chan] += val;
-                    }
-                }
+                const val = parseFloat(l.amt || l.amount) || 0;
+                const type = (l.type || "").trim().toUpperCase();
+                const chan = (l.chan || "").trim();
+                if (type === "REVENUE") { if (db.chans.hasOwnProperty(chan)) db.chans[chan] += val; }
             });
             sync();
-        } else {
-            notify("Fetch Error", "❌");
         }
     }
 
@@ -308,10 +320,7 @@
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById(id === 'dashboard' ? 'dashboard' : 'report').classList.add('active');
         el.classList.add('active');
-        if(id !== 'dashboard') { 
-            currentReportType = id.replace(' Report', '').toLowerCase(); 
-            setupFilterUI(currentReportType); 
-        }
+        if(id !== 'dashboard') { currentReportType = id.replace(' Report', '').toLowerCase(); setupFilterUI(currentReportType); }
         document.getElementById('navLinks').classList.remove('mobile-open');
     }
 
@@ -333,15 +342,9 @@
         const lbl = document.getElementById('filter-label');
         const today = new Date().toISOString().split('T')[0];
         if(type === 'monthly') { 
-            lbl.innerText = "Select Month:"; 
-            dIn.style.display="none"; 
-            mIn.style.display="block"; 
-            mIn.value=today.substring(0,7); 
+            lbl.innerText = "Select Month:"; dIn.style.display="none"; mIn.style.display="block"; mIn.value=today.substring(0,7); 
         } else { 
-            lbl.innerText = type === 'daily' ? "Select Day:" : "Select Start Date:"; 
-            dIn.style.display="block"; 
-            mIn.style.display="none"; 
-            dIn.value=today; 
+            lbl.innerText = type === 'daily' ? "Select Day:" : "Select Start Date:"; dIn.style.display="block"; mIn.style.display="none"; dIn.value=today; 
         }
         buildReport();
     }
@@ -361,12 +364,8 @@
 
         document.getElementById('m-title').innerText = "Confirm " + type;
         document.getElementById('m-body').innerHTML = `
-            <b>Amt:</b> ₱${amt.toLocaleString()}<br>
-            <b>Staff (Typed):</b> ${staffInput}<br><br>
-            <small style="color:#64748b">
-                <b>Verified User:</b> ${googleName}<br>
-                <b>Verified Email:</b> ${loggedInUser.email}
-            </small>`;
+            <b>Amt:</b> ₱${amt.toLocaleString()}<br><b>Staff:</b> ${staffInput}<br><br>
+            <small style="color:#64748b"><b>Verified:</b> ${googleName}</small>`;
         
         const imgContainer = document.getElementById('m-imgs');
         imgContainer.innerHTML = '';
@@ -374,27 +373,13 @@
 
         document.getElementById('modal').style.display = 'flex';
         document.getElementById('m-confirm').onclick = async () => {
-            notify("Syncing to Cloud...", "⏳");
-            
-            let uploadedUrls = [];
-            for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) uploadedUrls.push(url); } }
-
-            const entry = { 
-                type: type.toUpperCase(), 
-                amt, chan, desc, 
-                staff: staffInput, 
-                auth_user: loggedInUser.email,
-                google_name: googleName,
-                photos: uploadedUrls, 
-                time: now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), 
-                date: now.toLocaleDateString(), 
-                isoDate: now.toISOString().split('T')[0] 
-            };
-            
+            notify("Syncing...", "⏳");
+            let urls = [];
+            for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) urls.push(url); } }
+            const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: googleName, photos: urls, time: now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), date: now.toLocaleDateString(), isoDate: now.toISOString().split('T')[0] };
             const { error } = await _supabase.from('transactions').insert([entry]);
-            if (!error) {
-                fetchCloudData(); closeModal(); notify("Cloud Synced!", "✅"); clearForm();
-            } else { notify("Error Saving", "❌"); }
+            if (!error) { closeModal(); notify("Cloud Synced!", "✅"); clearForm(); }
+            else { notify("Error Saving", "❌"); }
         };
     }
 
@@ -410,36 +395,17 @@
         let tr = 0, te = 0;
         const dVal = document.getElementById('filter-date').value;
         const mVal = document.getElementById('filter-month').value;
-
         db.logs.filter(l => {
-            if (currentReportType === 'weekly') {
-                const s = new Date(dVal); const e = new Date(dVal); e.setDate(s.getDate()+7);
-                const ld = new Date(l.isoDate); return ld >= s && ld < e;
-            } else if (currentReportType === 'daily') { return l.isoDate === dVal; }
+            if (currentReportType === 'weekly') { const s = new Date(dVal); const e = new Date(dVal); e.setDate(s.getDate()+7); const ld = new Date(l.isoDate); return ld >= s && ld < e; }
+            else if (currentReportType === 'daily') { return l.isoDate === dVal; }
             else return l.isoDate.startsWith(mVal);
         }).sort((a,b)=>b.id-a.id).forEach(l => {
-            const val = parseFloat(l.amt) || 0;
-            const type = l.type ? l.type.trim().toUpperCase() : "";
-            
-            if(type === "REVENUE") tr += val; else te += val;
-            
+            const val = parseFloat(l.amt || l.amount) || 0;
+            const t = (l.type || "").trim().toUpperCase();
+            if(t === "REVENUE") tr += val; else te += val;
             let photoHtml = '';
-            if(l.photos && l.photos.length > 0) {
-                l.photos.forEach(p => { if(p) photoHtml += `<a href="${p}" target="_blank"><img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;"></a>`; });
-            }
-
-            table.innerHTML += `
-                <tr>
-                    <td>${l.date}<br><small>${l.time}</small></td>
-                    <td><b>${l.type}</b></td>
-                    <td>${l.staff}</td>
-                    <td><small style="color:var(--primary)">${l.google_name}</small><br><small style="font-size:0.6rem;">${l.auth_user}</small></td>
-                    <td>${l.desc}</td>
-                    <td>${l.chan}</td>
-                    <td>${type === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td>
-                    <td>${type === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td>
-                    <td>${photoHtml}</td>
-                </tr>`;
+            if(l.photos) l.photos.forEach(p => { if(p) photoHtml += `<a href="${p}" target="_blank"><img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;"></a>`; });
+            table.innerHTML += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${l.type}</b></td><td>${l.staff}</td><td><small>${l.google_name}</small></td><td>${l.desc}</td><td>${l.chan}</td><td>${t === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td><td>${t === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td><td>${photoHtml}</td></tr>`;
         });
         document.getElementById('rep-cards').innerHTML = `<div class="card dark-card"><h2>Period Revenue</h2><div class="net-total">₱${tr.toLocaleString()}</div></div><div class="card dark-card"><h2>Period Expenses</h2><div class="net-total" style="color:var(--danger)">₱${te.toLocaleString()}</div></div><div class="card dark-card"><h2>Period Net</h2><div class="net-total" style="color:#4ade80">₱${(tr-te).toLocaleString()}</div></div>`;
     }
@@ -451,14 +417,11 @@
     }
 
     function sync() {
-        let totalRevenue = 0;
-        let totalExpense = 0;
-
+        let tr = 0, te = 0;
         db.logs.forEach(l => {
-            const val = parseFloat(l.amt) || 0;
-            const type = l.type ? l.type.trim().toUpperCase() : "";
-            if (type === "REVENUE") totalRevenue += val;
-            if (type === "EXPENSE") totalExpense += val;
+            const val = parseFloat(l.amt || l.amount) || 0;
+            const type = (l.type || "").trim().toUpperCase();
+            if (type === "REVENUE") tr += val; if (type === "EXPENSE") te += val;
         });
 
         const overallDiv = document.getElementById('channel-stats-overall'); overallDiv.innerHTML='';
@@ -469,36 +432,34 @@
         const today = new Date().toISOString().split('T')[0];
         const dLogs = db.logs.filter(l => l.isoDate === today);
         let dRev = 0, dExp = 0;
-
         dLogs.forEach(l => {
-            const val = parseFloat(l.amt) || 0;
-            const type = l.type ? l.type.trim().toUpperCase() : "";
-            if (type === "REVENUE") dRev += val;
-            if (type === "EXPENSE") dExp += val;
+            const val = parseFloat(l.amt || l.amount) || 0;
+            const type = (l.type || "").trim().toUpperCase();
+            if (type === "REVENUE") dRev += val; if (type === "EXPENSE") dExp += val;
         });
 
         const dailyDiv = document.getElementById('channel-stats-daily'); dailyDiv.innerHTML = '';
         ['Cash', 'GCash', 'Maya', 'BPI'].forEach(c => {
-            const amt = dLogs.filter(l => l.chan === c && l.type.toUpperCase() === 'REVENUE').reduce((s,l) => s + (parseFloat(l.amt) || 0), 0);
-            dailyDiv.innerHTML += `<div class="channel-row"><span>${c}</span> <span class="val" style="color:#1e293b">₱${amt.toLocaleString()}</span></div>`;
+            const amt = dLogs.filter(l => l.chan === c && l.type.toUpperCase() === 'REVENUE').reduce((s,l) => s + (parseFloat(l.amt || l.amount) || 0), 0);
+            dailyDiv.innerHTML += `<div class="channel-row"><span>${c}</span> <span class="val">₱${amt.toLocaleString()}</span></div>`;
         });
 
-        document.getElementById('total-net').innerText = "₱"+(totalRevenue - totalExpense).toLocaleString();
-        document.getElementById('total-rev').innerText = "₱"+totalRevenue.toLocaleString();
-        document.getElementById('total-exp').innerText = "₱"+totalExpense.toLocaleString();
+        document.getElementById('total-net').innerText = "₱"+(tr - te).toLocaleString();
+        document.getElementById('total-rev').innerText = "₱"+tr.toLocaleString();
+        document.getElementById('total-exp').innerText = "₱"+te.toLocaleString();
         document.getElementById('daily-net').innerText = "₱"+(dRev-dExp).toLocaleString();
         document.getElementById('daily-rev').innerText = "₱"+dRev.toLocaleString();
         document.getElementById('daily-exp').innerText = "₱"+dExp.toLocaleString();
         
         const pd = document.getElementById('loyverse-display');
         pd.innerText = "₱"+parseFloat(db.pos||0).toLocaleString();
-        pd.style.color = (totalRevenue === parseFloat(db.pos)) ? "#4ade80" : "#1e293b";
+        pd.style.color = (tr === parseFloat(db.pos)) ? "#4ade80" : "#1e293b";
 
         const log = document.getElementById('log-list'); log.innerHTML = '';
         db.logs.slice(0,20).forEach((l, i) => {
-            const val = parseFloat(l.amt) || 0;
+            const val = parseFloat(l.amt || l.amount) || 0;
             const typeChar = l.type ? l.type.trim().toUpperCase()[0] : "?";
-            log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div style="color:#1e293b"><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br><button class="btn-danger" style="margin-top:5px" onclick="askPwd('del', ${l.id})">Delete</button></div></div>`;
+            log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br><button class="btn-danger" style="margin-top:5px" onclick="askPwd('del', ${l.id})">Delete</button></div></div>`;
         });
 
         if(document.getElementById('report').classList.contains('active')) buildReport();
@@ -509,7 +470,7 @@
         document.getElementById('p-confirm').onclick = async () => {
             if(document.getElementById('p-input').value === KEY) {
                 if(act === 'reset') { await _supabase.from('transactions').delete().neq('id', 0); location.reload(); }
-                else { await _supabase.from('transactions').delete().eq('id', targetId); fetchCloudData(); }
+                else { await _supabase.from('transactions').delete().eq('id', targetId); }
                 closePwd(); notify("Confirmed!", "🔓");
             } else notify("Wrong!", "❌");
         };
