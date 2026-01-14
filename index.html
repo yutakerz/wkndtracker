@@ -35,28 +35,35 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* BOTTOM NAV - iOS STYLE */
+        /* --- MODIFIED TOP NAV (MINIMALIST) --- */
         nav { 
-            position: fixed; bottom: 0; left: 0; right: 0; 
-            /* Translucent Blur Effect for Native Feel */
+            position: fixed; 
+            top: 0; left: 0; right: 0; /* Pinned to Top */
+            bottom: auto; /* Reset bottom */
+            
+            /* Blur Effect */
             background: rgba(62, 87, 61, 0.95); 
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            
             color: white; 
-            display: flex; align-items: center; justify-content: space-between; 
-            padding: 10px 20px calc(15px + env(safe-area-inset-bottom)) 20px;
+            display: flex; align-items: center; justify-content: center; /* Centered links */
+            
+            /* Safe Area for iPhone Notch */
+            padding: calc(10px + env(safe-area-inset-top)) 20px 15px 20px;
+            
             z-index: 2000; 
-            border-top: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.15); 
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
         }
 
-        /* Adjusted Container to remove huge white space */
+        /* Container Padding Fix for Top Nav */
         .container { 
             padding: 20px; 
-            padding-bottom: 100px; /* Reduced from 120px to fit tighter */
+            padding-top: 100px; /* Push content down so it clears the header */
+            padding-bottom: 40px; /* Standard bottom padding */
             max-width: 1400px; margin: 0 auto; 
         }
 
-        /* FIX: Ensure background covers entire scroll area */
         html { background-color: var(--bg); height: 100%; }
         body { 
             font-family: 'Inter', system-ui, sans-serif; 
@@ -74,12 +81,19 @@
         .login-box { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 90%; max-width: 400px; }
         .google-btn { background: white; border: 1px solid #dadce0; color: #3c4043; padding: 12px 24px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; width: 100%; transition: 0.2s; margin-top: 20px; }
         
-        .logo { font-weight: 800; font-size: 1.3rem; letter-spacing: -1px; }
-        .logo span { color: var(--primary); }
-        .nav-links { display: flex; gap: 20px; width: 100%; justify-content: space-around; }
-        .nav-links span { cursor: pointer; font-weight: 600; font-size: 0.8rem; opacity: 0.6; text-align: center; padding: 5px; display: flex; flex-direction: column; align-items: center; }
-        .nav-links span.active { opacity: 1; color: var(--primary); }
-        .nav-icon { font-size: 1.2rem; margin-bottom: 2px; display: block; }
+        /* Updated Nav Links (Minimalist, No Icons) */
+        .nav-links { display: flex; gap: 30px; width: 100%; justify-content: center; }
+        .nav-links span { 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 0.9rem; /* Slightly larger text since icons are gone */
+            opacity: 0.6; 
+            text-align: center; 
+            padding: 5px; 
+            letter-spacing: 0.5px;
+            transition: opacity 0.2s;
+        }
+        .nav-links span.active { opacity: 1; color: var(--primary); border-bottom: 2px solid var(--primary); }
         
         .view { display: none; animation: fadeIn 0.3s ease; }
         .view.active { display: block; }
@@ -166,10 +180,10 @@
 
 <nav id="main-nav" style="display:none;">
     <div class="nav-links">
-        <span class="active" onclick="switchView('dashboard', this)"><b class="nav-icon">📊</b>Dash</span>
-        <span onclick="switchView('daily', this)"><b class="nav-icon">📅</b>Daily</span>
-        <span onclick="switchView('weekly', this)"><b class="nav-icon">🗓️</b>Weekly</span>
-        <span onclick="logout()" style="color:var(--danger)"><b class="nav-icon">🚪</b>Exit</span>
+        <span class="active" onclick="switchView('dashboard', this)">Dash</span>
+        <span onclick="switchView('daily', this)">Daily</span>
+        <span onclick="switchView('weekly', this)">Weekly</span>
+        <span onclick="logout()" style="color:var(--danger)">Exit</span>
     </div>
 </nav>
 
