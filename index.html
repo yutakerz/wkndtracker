@@ -69,9 +69,13 @@
 
         * { box-sizing: border-box; }
 
-        #login-page { position: fixed; inset: 0; background: var(--dark-card); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .login-box { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 90%; max-width: 400px; }
-        .google-btn { background: white; border: 1px solid #dadce0; color: #3c4043; padding: 12px 24px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; width: 100%; transition: 0.2s; margin-top: 20px; }
+        #login-page { position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-box { background: var(--primary); padding: 40px; border-radius: 24px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(155, 165, 68, 0.3); }
+        .login-box h1 { margin:0; color:white; letter-spacing:-1px; }
+        .login-box span { color: #f1f5f9; opacity: 0.8; }
+        .login-box p { color:rgba(255,255,255,0.8); margin-top:10px; }
+        
+        .google-btn { background: white; border: none; color: #3c4043; padding: 12px 24px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; width: 100%; transition: 0.2s; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
         .nav-links { display: flex; gap: 20px; width: 100%; justify-content: center; }
         .nav-links span { 
@@ -122,19 +126,27 @@
         td { padding: 15px; border-top: 1px solid #f1f5f9; font-size: 0.85rem; }
         
         .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        
         .filter-section { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; border: 1px solid #e2e8f0; flex-wrap: wrap; }
         
         .cool-alert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: var(--dark-card); color: white; padding: 15px 30px; border-radius: 50px; z-index: 10000; transition: 0.5s; border: 2px solid var(--primary); display: flex; gap: 10px; }
         .cool-alert.show { top: 20px; }
+        
+        /* OVERLAYS */
         .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 4000; padding: 20px; }
         .modal-content { background: white; padding: 30px; border-radius: 24px; width: 100%; max-width: 420px; text-align: center; }
+        
+        /* IMAGE LIGHTBOX STYLE - WEB & MOBILE FRIENDLY */
+        #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
+        #lightbox img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 10px; }
+        .lightbox-close { position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; color: white; font-size: 2rem; cursor: pointer; }
+        .lightbox-nav { position: absolute; bottom: 50px; display: flex; gap: 30px; width: 100%; justify-content: center; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; cursor: pointer; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* PRINT STYLES */
         @media print {
             body { background: white; color: black; }
-            nav, #splash, .cool-alert, .filter-section, .btn, .dashboard-grid, .photo-grid, .input-stack { display: none !important; }
+            nav, #splash, .cool-alert, .filter-section, .btn, .dashboard-grid, .photo-grid, .input-stack, .lightbox-nav, .lightbox-close { display: none !important; }
             .container { padding: 0; margin: 0; max-width: 100%; }
             .view { display: block !important; }
             #dashboard { display: none !important; } 
@@ -145,7 +157,6 @@
             .table-wrap { overflow: visible; border: none; }
             table { min-width: 100%; width: 100%; font-size: 10pt; }
             th, td { border: 1px solid #ddd; padding: 8px; }
-            a { text-decoration: none; color: black; }
         }
     </style>
 </head>
@@ -154,12 +165,22 @@
 <div id="splash">
     <div class="spinner"></div>
     <h2 style="color: #64748b; font-size: 1rem; letter-spacing: 2px;">WKND<span style="color:var(--primary)">TRACKER</span></h2>
+    <p id="splash-text" style="display:none; color:#64748b; margin-top:10px; font-size:0.8rem;">Logging out...</p>
+</div>
+
+<div id="lightbox" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event)">
+    <div class="lightbox-close" onclick="closeLightbox()">×</div>
+    <img id="lightbox-img" src="">
+    <div class="lightbox-nav">
+        <button class="nav-btn" onclick="navLightbox(-1)">Previous</button>
+        <button class="nav-btn" onclick="navLightbox(1)">Next</button>
+    </div>
 </div>
 
 <div id="login-page">
     <div class="login-box">
-        <h1 style="margin:0; color:var(--dark); letter-spacing:-1px;">wknd<span>tracker</span></h1>
-        <p style="color:#64748b; margin-top:10px;">Private Crew Access Only</p>
+        <h1>wknd<span>tracker</span></h1>
+        <p>Private Crew Access Only</p>
         <button class="google-btn" onclick="loginWithGoogle()">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
             Sign in with Google
@@ -194,7 +215,7 @@
                 </div>
 
                 <div class="card">
-                    <h2 style="color: #64748b;">Shift Net (4PM - 3AM PST)</h2>
+                    <h2 style="color: #64748b;">Shift Net (3PM - 4AM PST)</h2>
                     <div class="net-total" id="daily-net" style="font-size: 1.8rem; color: var(--success);">₱0.00</div>
                     <div style="display:flex; justify-content: space-between; font-size: 0.75rem; color:#64748b; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
                         <span>Rev: <b id="daily-rev" style="color:var(--success)">₱0</b></span>
@@ -204,10 +225,10 @@
                 </div>
 
                 <div class="card">
-                    <h2 style="color: #64748b;">Loyverse Reference</h2>
+                    <h2 style="color: #64748b;">Loyverse Total Profit</h2>
                     <div id="loyverse-display" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; color: #1e293b;">₱0.00</div>
                     <input type="number" id="loyverse-input" placeholder="New Total" style="padding: 8px;">
-                    <button class="btn btn-primary" style="font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Update Target</button>
+                    <button class="btn btn-primary" style="font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Confirm</button>
                 </div>
             </div>
 
@@ -216,9 +237,9 @@
                     <div class="card">
                         <h2 style="color: #64748b;">Post Sales</h2>
                         <div class="input-stack">
-                            <input type="number" id="rev-amt" placeholder="Amount (₱)">
+                            <input type="number" id="rev-amt" placeholder="Amount (₱) - Optional">
                             <input type="text" id="rev-staff" placeholder="Admin Reference Name">
-                            <select id="rev-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option></select>
+                            <select id="rev-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option><option>Others</option></select>
                         </div>
                         <label style="font-size: 0.65rem; color: #94a3b8; margin-bottom: 5px; display: block;">RECEIPT PHOTOS (MAX 4)</label>
                         <div class="photo-grid">
@@ -257,9 +278,12 @@
         <div class="filter-section">
             <label id="filter-label" style="font-weight: bold; font-size: 0.9rem;"></label>
             <input type="date" id="filter-date" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
+            <input type="date" id="filter-date-end" style="width: auto; margin-bottom: 0; display:none;" onchange="updateReportFilter()">
             <input type="month" id="filter-month" style="width: auto; margin-bottom: 0; display: none;" onchange="updateReportFilter()">
         </div>
-        <div id="rep-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:20px;"></div>
+        
+        <div id="rep-cards" style="margin-bottom:20px; max-width:400px;"></div>
+        
         <div class="table-wrap">
             <table>
                 <thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Verified User</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead>
@@ -279,10 +303,15 @@
 
     const KEY = "admin";
     let loggedInUser = null;
-    let db = { chans: {Cash:0, GCash:0, Maya:0, BPI:0}, logs: [], pos: localStorage.getItem('wknd_pos') || 0 };
+    let db = { chans: {Cash:0, GCash:0, Maya:0, BPI:0, Others:0}, logs: [], pos: localStorage.getItem('wknd_pos') || 0 };
     let currentReportType = 'weekly';
     let tempPhotos = [];
     let currentSlot = 0;
+    
+    // LIGHTBOX & SWIPE STATE
+    let lbPhotos = [];
+    let lbIndex = 0;
+    let touchStartX = 0;
 
     async function getPSTTime() {
         try {
@@ -325,7 +354,12 @@
         _supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => { fetchCloudData(); }).subscribe();
     }
 
-    async function logout() { await _supabase.auth.signOut(); location.reload(); }
+    async function logout() { 
+        document.getElementById('splash').style.display = 'flex';
+        document.getElementById('splash-text').style.display = 'block';
+        await _supabase.auth.signOut(); 
+        location.reload(); 
+    }
 
     async function fetchCloudData() {
         const { data, error } = await _supabase.from('transactions').select('*').order('id', { ascending: false });
@@ -333,7 +367,7 @@
 
         if (!error && data) {
             db.logs = data;
-            db.chans = { Cash: 0, GCash: 0, Maya: 0, BPI: 0 };
+            db.chans = { Cash: 0, GCash: 0, Maya: 0, BPI: 0, Others: 0 };
             data.forEach(l => { 
                 const val = parseFloat(l.amt || l.amount) || 0;
                 const type = (l.type || "").trim().toUpperCase();
@@ -344,10 +378,19 @@
         }
     }
 
+    async function updateLoyverse() {
+        const amt = parseFloat(document.getElementById('loyverse-input').value);
+        if(!amt && amt !== 0) return notify("Enter amount", "⚠️");
+        const pstNow = await getPSTTime();
+        const entry = { type: 'POS_REF', amt: amt, chan: 'System', desc: 'POS Reference Update', staff: 'System', auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
+        const { error } = await _supabase.from('transactions').insert([entry]);
+        if (!error) { document.getElementById('loyverse-input').value=''; notify("Target Updated!", "📈"); fetchCloudData(); }
+        else { notify("Error Saving", "❌"); }
+    }
+
     async function sync() {
         const pstNow = await getPSTTime();
         const currentShiftDate = getShiftDate(pstNow);
-
         let tr = 0, te = 0;
         db.logs.forEach(l => {
             const val = parseFloat(l.amt || l.amount) || 0;
@@ -356,20 +399,20 @@
         });
 
         const overallDiv = document.getElementById('channel-stats-overall'); overallDiv.innerHTML='';
-        for(let [k,v] of Object.entries(db.chans)) {
-            overallDiv.innerHTML += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`;
-        }
+        for(let [k,v] of Object.entries(db.chans)) { overallDiv.innerHTML += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
 
         const dLogs = db.logs.filter(l => l.isoDate === currentShiftDate);
-        let dRev = 0, dExp = 0;
+        let dRev = 0, dExp = 0, dPos = 0;
         dLogs.forEach(l => {
             const val = parseFloat(l.amt || l.amount) || 0;
             const type = (l.type || "").trim().toUpperCase();
-            if (type === "REVENUE") dRev += val; if (type === "EXPENSE") dExp += val;
+            if (type === "REVENUE") dRev += val; 
+            if (type === "EXPENSE") dExp += val;
+            if (type === "POS_REF") dPos += val; 
         });
 
         const dailyDiv = document.getElementById('channel-stats-daily'); dailyDiv.innerHTML = '';
-        ['Cash', 'GCash', 'Maya', 'BPI'].forEach(c => {
+        ['Cash', 'GCash', 'Maya', 'BPI', 'Others'].forEach(c => {
             const amt = dLogs.filter(l => l.chan === c && l.type.toUpperCase() === 'REVENUE').reduce((s,l) => s + (parseFloat(l.amt || l.amount) || 0), 0);
             dailyDiv.innerHTML += `<div class="channel-row"><span>${c}</span> <span class="val">₱${amt.toLocaleString()}</span></div>`;
         });
@@ -381,33 +424,30 @@
         document.getElementById('daily-rev').innerText = "₱"+dRev.toLocaleString();
         document.getElementById('daily-exp').innerText = "₱"+dExp.toLocaleString();
         
-        const pd = document.getElementById('loyverse-display');
-        pd.innerText = "₱"+parseFloat(db.pos||0).toLocaleString();
-        pd.style.color = (tr === parseFloat(db.pos)) ? "#4ade80" : "#1e293b";
+        const pd = document.getElementById('loyverse-display'); pd.innerText = "₱"+dPos.toLocaleString(); pd.style.color = (dRev >= dPos && dPos > 0) ? "#4ade80" : "#1e293b";
 
-        const shiftLogs = db.logs.filter(l => l.isoDate === currentShiftDate).slice(0, 20);
-        
+        const shiftLogs = db.logs.filter(l => l.isoDate === currentShiftDate && l.type !== 'POS_REF').slice(0, 20);
         const log = document.getElementById('log-list'); log.innerHTML = '';
-        if (shiftLogs.length === 0) {
-            log.innerHTML = `<div style="text-align:center; padding:20px; color:#94a3b8; font-size:0.8rem;">No transactions this shift</div>`;
-        } else {
-            shiftLogs.forEach((l, i) => {
+        if (shiftLogs.length === 0) { log.innerHTML = `<div style="text-align:center; padding:20px; color:#94a3b8; font-size:0.8rem;">No transactions this shift</div>`; }
+        else {
+            shiftLogs.forEach((l) => {
                 const val = parseFloat(l.amt || l.amount) || 0;
                 const typeChar = l.type ? l.type.trim().toUpperCase()[0] : "?";
-                log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff} | ${l.google_name || 'System'}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br><button class="btn-danger" style="margin-top:5px" onclick="askPwd('del', ${l.id})">Delete</button></div></div>`;
+                log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff} | ${l.google_name || 'System'}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br></div></div>`;
             });
         }
-
         if(document.getElementById('report').classList.contains('active')) buildReport();
     }
 
     async function confirmEntry(type) {
-        let amt = parseFloat(document.getElementById(type === 'REVENUE' ? 'rev-amt' : 'exp-amt').value);
+        let amtInput = document.getElementById(type === 'REVENUE' ? 'rev-amt' : 'exp-amt').value;
+        let amt = parseFloat(amtInput) || 0;
         let staffInput = document.getElementById(type === 'REVENUE' ? 'rev-staff' : 'exp-staff').value;
         let chan = document.getElementById(type === 'REVENUE' ? 'rev-channel' : 'exp-channel').value;
         let desc = type === 'REVENUE' ? "Daily Sales Inflow" : document.getElementById('exp-desc').value;
 
-        if(!amt || !staffInput) return notify("Fill all fields!", "⚠️");
+        if(type === 'EXPENSE' && !amtInput) return notify("Fill all fields!", "⚠️");
+        if(!staffInput) return notify("Admin Reference required!", "⚠️");
         
         const pstNow = await getPSTTime();
         const googleName = loggedInUser.user_metadata.full_name || "Unknown User";
@@ -424,12 +464,7 @@
             notify("Syncing...", "⏳");
             let urls = [];
             for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) urls.push(url); } }
-            const entry = { 
-                type: type.toUpperCase(), amt, chan, desc, staff: staffInput, 
-                auth_user: loggedInUser.email, google_name: googleName, photos: urls, 
-                time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), 
-                date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) 
-            };
+            const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: googleName, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
             const { error } = await _supabase.from('transactions').insert([entry]);
             if (!error) { closeModal(); notify("Cloud Synced!", "✅"); clearForm(); }
             else { notify("Error Saving", "❌"); }
@@ -440,11 +475,34 @@
         try {
             const blob = await (await fetch(base64)).blob();
             const fileName = `receipt_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-            const { data, error } = await _supabase.storage.from('receipts').upload(`public/${fileName}`, blob);
+            const { data, error } = await _supabase.storage.from('receipts').upload(`public/${fileName}`, blob, { contentType: 'image/jpeg' });
             if (error) throw error;
             return _supabase.storage.from('receipts').getPublicUrl(`public/${fileName}`).data.publicUrl;
         } catch (e) { return null; }
     }
+
+    // LIGHTBOX FUNCTIONS (TOUCH & MOUSE)
+    function handleTouchStart(e) { touchStartX = e.changedTouches[0].screenX; }
+    function handleTouchEnd(e) {
+        let touchEndX = e.changedTouches[0].screenX;
+        if (touchEndX < touchStartX - 50) navLightbox(1);
+        if (touchEndX > touchStartX + 50) navLightbox(-1);
+    }
+    function openLightbox(urls, index) {
+        lbPhotos = urls; lbIndex = index;
+        document.getElementById('lightbox').style.display = 'flex';
+        updateLightboxImage();
+    }
+    function updateLightboxImage() {
+        document.getElementById('lightbox-img').src = lbPhotos[lbIndex];
+    }
+    function navLightbox(dir) {
+        lbIndex += dir;
+        if(lbIndex < 0) lbIndex = lbPhotos.length - 1;
+        if(lbIndex >= lbPhotos.length) lbIndex = 0;
+        updateLightboxImage();
+    }
+    function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
 
     function switchView(id, el) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -468,14 +526,14 @@
 
     function setupFilterUI(type) {
         const dIn = document.getElementById('filter-date');
+        const dEnd = document.getElementById('filter-date-end');
         const mIn = document.getElementById('filter-month');
         const lbl = document.getElementById('filter-label');
         const today = new Date().toISOString().split('T')[0];
-        if(type === 'monthly') { 
-            lbl.innerText = "Select Month:"; dIn.style.display="none"; mIn.style.display="block"; mIn.value=today.substring(0,7); 
-        } else { 
-            lbl.innerText = type === 'daily' ? "Select Day:" : "Select Start Date:"; dIn.style.display="block"; mIn.style.display="none"; dIn.value=today; 
-        }
+        dIn.style.display = "none"; dEnd.style.display = "none"; mIn.style.display = "none";
+        if(type === 'monthly') { lbl.innerText = "Select Month:"; mIn.style.display="block"; mIn.value=today.substring(0,7); } 
+        else if (type === 'weekly') { lbl.innerText = "Date Range:"; dIn.style.display="block"; dEnd.style.display="block"; dIn.value = today; dEnd.value = today; }
+        else { lbl.innerText = "Select Day:"; dIn.style.display="block"; dIn.value=today; }
         buildReport();
     }
 
@@ -483,37 +541,62 @@
 
     function buildReport() {
         const table = document.getElementById('rep-table'); table.innerHTML = '';
-        let tr = 0, te = 0;
+        let tr = 0, te = 0, tPos = 0;
         const dVal = document.getElementById('filter-date').value;
+        const dEnd = document.getElementById('filter-date-end').value;
         const mVal = document.getElementById('filter-month').value;
         
-        db.logs.filter(l => {
+        let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
+        let repChans = { Cash:0, GCash:0, Maya:0, BPI:0, Others:0 };
+
+        const filteredLogs = db.logs.filter(l => {
             if (currentReportType === 'weekly') { 
-                const picked = new Date(dVal);
-                const day = picked.getDay();
-                const diff = picked.getDate() - day + (day == 0 ? -6 : 1); 
-                const monday = new Date(picked.setDate(diff));
-                const nextMonday = new Date(monday); nextMonday.setDate(monday.getDate() + 7);
-                const ld = new Date(l.isoDate); 
-                return ld >= monday && ld < nextMonday; 
+                if(!dVal || !dEnd) return false;
+                const ld = new Date(l.isoDate), start = new Date(dVal), end = new Date(dEnd);
+                return ld >= start && ld <= end;
             }
             else if (currentReportType === 'daily') { return l.isoDate === dVal; }
             else return l.isoDate.startsWith(mVal);
-        }).sort((a,b)=>b.id-a.id).forEach(l => {
+        }).sort((a,b)=>b.id-a.id);
+
+        filteredLogs.forEach(l => {
             const val = parseFloat(l.amt || l.amount) || 0;
             const t = (l.type || "").trim().toUpperCase();
-            if(t === "REVENUE") tr += val; else te += val;
-            let photoHtml = '';
-            if(l.photos) l.photos.forEach(p => { if(p) photoHtml += `<a href="${p}" target="_blank"><img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;"></a>`; });
-            table.innerHTML += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${l.type}</b></td><td>${l.staff}</td><td><small>${l.google_name || 'System'}</small></td><td>${l.desc}</td><td>${l.chan}</td><td>${t === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td><td>${t === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td><td>${photoHtml}</td></tr>`;
-        });
-        document.getElementById('rep-cards').innerHTML = `<div class="card dark-card"><h2>Period Revenue</h2><div class="net-total">₱${tr.toLocaleString()}</div></div><div class="card dark-card"><h2>Period Expenses</h2><div class="net-total" style="color:var(--danger)">₱${te.toLocaleString()}</div></div><div class="card dark-card"><h2>Period Net</h2><div class="net-total" style="color:#4ade80">₱${(tr-te).toLocaleString()}</div></div>`;
-    }
+            const c = (l.chan || "").trim();
 
-    function updateLoyverse() {
-        db.pos = document.getElementById('loyverse-input').value;
-        localStorage.setItem('wknd_pos', db.pos);
-        document.getElementById('loyverse-input').value=''; sync(); notify("Updated!", "📈");
+            if(t === "REVENUE") { tr += val; if(repChans.hasOwnProperty(c)) repChans[c] += val; } 
+            else if (t === "EXPENSE") { te += val; } 
+            else if (t === "POS_REF") { tPos += val; }
+            
+            if(t !== 'POS_REF') {
+                let photoHtml = '';
+                if(l.photos && Array.isArray(l.photos)) {
+                    const photosJson = JSON.stringify(l.photos).replace(/"/g, '&quot;');
+                    l.photos.forEach((p, idx) => { 
+                        if(p) photoHtml += `<img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;border:1px solid #ddd;cursor:pointer;" onclick="openLightbox(${photosJson}, ${idx})">`; 
+                    });
+                }
+                table.innerHTML += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${l.type}</b></td><td>${l.staff}</td><td><small>${l.google_name || 'System'}</small></td><td>${l.desc}</td><td>${l.chan}</td><td>${t === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td><td>${t === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td><td>${photoHtml}</td></tr>`;
+            }
+        });
+
+        let chanHtml = '';
+        for(let [k,v] of Object.entries(repChans)) { chanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
+
+        document.getElementById('rep-cards').innerHTML = `
+            <div class="card">
+                <h2 style="color:#64748b">Period Balance & Channels</h2>
+                <div class="net-total" style="color:#1e293b">₱${(tr - te).toLocaleString()}</div>
+                <div style="display:flex; justify-content: space-between; font-size: 0.7rem; color:#94a3b8; margin-bottom: 10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                    <span>Rev: <b style="color:var(--success)">₱${tr.toLocaleString()}</b></span>
+                    <span>Exp: <b style="color:var(--danger)">₱${te.toLocaleString()}</b></span>
+                </div>
+                ${chanHtml}
+                <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                    <h2 style="margin:0; font-size:0.7rem; color:#64748b;">${loyverseLabel}</h2>
+                    <div style="font-size:1.2rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div>
+                </div>
+            </div>`;
     }
 
     function askPwd(act, targetId) {
@@ -533,8 +616,7 @@
     function clearForm() {
         document.getElementById('rev-amt').value=''; document.getElementById('exp-amt').value=''; document.getElementById('exp-desc').value='';
         document.getElementById('rev-staff').value=''; document.getElementById('exp-staff').value='';
-        tempPhotos = [];
-        for(let i=0; i<4; i++) { document.getElementById(`slot-${i}`).innerHTML = ''; document.getElementById(`slot-${i}`).classList.remove('has-img'); }
+        tempPhotos = []; for(let i=0; i<4; i++) { document.getElementById(`slot-${i}`).innerHTML = ''; document.getElementById(`slot-${i}`).classList.remove('has-img'); }
     }
     
     checkUser();
