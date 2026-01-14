@@ -140,7 +140,7 @@
         #lightbox img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 10px; }
         .lightbox-close { position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; color: white; font-size: 2rem; cursor: pointer; }
         .lightbox-nav { position: absolute; bottom: 50px; display: flex; gap: 30px; width: 100%; justify-content: center; }
-        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; cursor: pointer; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px; border-radius: 50px; font-weight: 700; cursor: pointer; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -215,7 +215,7 @@
                 </div>
 
                 <div class="card">
-                    <h2 style="color: #64748b;">Shift Net (3PM - 4AM PST)</h2>
+                    <h2 style="color: #64748b;">Shift Net (8AM Reset)</h2>
                     <div class="net-total" id="daily-net" style="font-size: 1.8rem; color: var(--success);">₱0.00</div>
                     <div style="display:flex; justify-content: space-between; font-size: 0.75rem; color:#64748b; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
                         <span>Rev: <b id="daily-rev" style="color:var(--success)">₱0</b></span>
@@ -324,9 +324,10 @@
     }
 
     function getShiftDate(dateObj) {
+        // Shift resets at 8AM. If hour < 8 (0-7), it belongs to previous day
         const hour = dateObj.getHours();
         const date = new Date(dateObj);
-        if (hour < 4) { date.setDate(date.getDate() - 1); }
+        if (hour < 8) { date.setDate(date.getDate() - 1); }
         return date.toISOString().split('T')[0];
     }
 
@@ -399,7 +400,6 @@
 
         const overallDiv = document.getElementById('channel-stats-overall'); overallDiv.innerHTML='';
         for(let [k,v] of Object.entries(db.chans)) { 
-            // MODIFIED: SKIP OTHERS IN BOXES
             if(k === 'Others') continue;
             overallDiv.innerHTML += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; 
         }
@@ -415,7 +415,6 @@
         });
 
         const dailyDiv = document.getElementById('channel-stats-daily'); dailyDiv.innerHTML = '';
-        // MODIFIED: SKIP OTHERS IN BOXES
         ['Cash', 'GCash', 'Maya', 'BPI'].forEach(c => {
             const amt = dLogs.filter(l => l.chan === c && l.type.toUpperCase() === 'REVENUE').reduce((s,l) => s + (parseFloat(l.amt || l.amount) || 0), 0);
             dailyDiv.innerHTML += `<div class="channel-row"><span>${c}</span> <span class="val">₱${amt.toLocaleString()}</span></div>`;
@@ -584,7 +583,6 @@
 
         let chanHtml = '';
         for(let [k,v] of Object.entries(repChans)) { 
-            // MODIFIED: SKIP OTHERS IN BOXES
             if(k === 'Others') continue;
             chanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; 
         }
@@ -605,6 +603,18 @@
             </div>`;
     }
 
+    function askPwd(act, targetId) {
+        document.getElementById('pwd-modal').style.display = 'flex';
+        document.getElementById('p-confirm').onclick = async () => {
+            if(document.getElementById('p-input').value === KEY) {
+                if(act === 'reset') { await _supabase.from('transactions').delete().neq('id', 0); location.reload(); }
+                else { await _supabase.from('transactions').delete().eq('id', targetId); }
+                closePwd(); notify("Confirmed!", "🔓");
+            } else notify("Wrong!", "❌");
+        };
+    }
+
+    function notify(m, i) { const a = document.getElementById('cool-alert'); document.getElementById('alert-icon').innerText = i; document.getElementById('alert-msg').innerText = m; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'), 3000); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
     function closePwd() { document.getElementById('pwd-modal').style.display = 'none'; document.getElementById('p-input').value=''; }
     function clearForm() {
@@ -612,7 +622,6 @@
         document.getElementById('rev-staff').value=''; document.getElementById('exp-staff').value='';
         tempPhotos = []; for(let i=0; i<4; i++) { document.getElementById(`slot-${i}`).innerHTML = ''; document.getElementById(`slot-${i}`).classList.remove('has-img'); }
     }
-    function notify(m, i) { const a = document.getElementById('cool-alert'); document.getElementById('alert-icon').innerText = i; document.getElementById('alert-msg').innerText = m; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'), 3000); }
     
     checkUser();
 </script>
