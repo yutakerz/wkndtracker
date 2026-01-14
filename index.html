@@ -59,7 +59,7 @@
         /* Container Padding Fix for Top Nav */
         .container { 
             padding: 20px; 
-            padding-top: 100px; /* Push content down so it clears the header */
+            padding-top: 140px; /* Push content down so it clears the header */
             padding-bottom: 40px; /* Standard bottom padding */
             max-width: 1400px; margin: 0 auto; 
         }
@@ -180,10 +180,10 @@
 
 <nav id="main-nav" style="display:none;">
     <div class="nav-links">
-        <span class="active" onclick="switchView('dashboard', this)">Dash</span>
+        <span class="active" onclick="switchView('dashboard', this)">Home</span>
         <span onclick="switchView('daily', this)">Daily</span>
         <span onclick="switchView('weekly', this)">Weekly</span>
-        <span onclick="logout()" style="color:var(--danger)">Exit</span>
+        <span onclick="logout()" style="color:var(--danger)">Log Out</span>
     </div>
 </nav>
 
@@ -212,10 +212,10 @@
                 </div>
 
                 <div class="card">
-                    <h2 style="color: #64748b;">POS Reference</h2>
+                    <h2 style="color: #64748b;">Loyverse Reference</h2>
                     <div id="loyverse-display" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; color: #1e293b;">₱0.00</div>
                     <input type="number" id="loyverse-input" placeholder="New Total" style="padding: 8px;">
-                    <button class="btn btn-primary" style="padding:8px; font-size: 0.8rem;" onclick="updateLoyverse()">Update Target</button>
+                    <button class="btn btn-primary" style="padding:px; font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Update Target</button>
                 </div>
             </div>
 
