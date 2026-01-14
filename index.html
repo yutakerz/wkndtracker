@@ -35,32 +35,24 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- MODIFIED TOP NAV (MINIMALIST) --- */
+        /* --- TOP NAV (MINIMALIST) --- */
         nav { 
             position: fixed; 
-            top: 0; left: 0; right: 0; /* Pinned to Top */
-            bottom: auto; /* Reset bottom */
-            
-            /* Blur Effect */
+            top: 0; left: 0; right: 0; 
             background: rgba(62, 87, 61, 0.95); 
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            
             color: white; 
-            display: flex; align-items: center; justify-content: center; /* Centered links */
-            
-            /* Safe Area for iPhone Notch */
+            display: flex; align-items: center; justify-content: center; 
             padding: calc(10px + env(safe-area-inset-top)) 20px 15px 20px;
-            
             z-index: 2000; 
             border-bottom: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
         }
 
-        /* Container Padding Fix for Top Nav */
         .container { 
             padding: 20px; 
-            padding-top: 140px; /* Push content down so it clears the header */
-            padding-bottom: 40px; /* Standard bottom padding */
+            padding-top: 140px; 
+            padding-bottom: 40px; 
             max-width: 1400px; margin: 0 auto; 
         }
 
@@ -81,12 +73,11 @@
         .login-box { background: white; padding: 40px; border-radius: 24px; text-align: center; width: 90%; max-width: 400px; }
         .google-btn { background: white; border: 1px solid #dadce0; color: #3c4043; padding: 12px 24px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; width: 100%; transition: 0.2s; margin-top: 20px; }
         
-        /* Updated Nav Links (Minimalist, No Icons) */
-        .nav-links { display: flex; gap: 30px; width: 100%; justify-content: center; }
+        .nav-links { display: flex; gap: 20px; width: 100%; justify-content: center; }
         .nav-links span { 
             cursor: pointer; 
             font-weight: 600; 
-            font-size: 0.9rem; /* Slightly larger text since icons are gone */
+            font-size: 0.85rem; 
             opacity: 0.6; 
             text-align: center; 
             padding: 5px; 
@@ -126,9 +117,9 @@
         .btn-danger { background: #fee2e2; color: var(--danger); font-size: 0.75rem; width: auto; padding: 5px 10px; border-radius: 6px;}
         
         .table-wrap { overflow-x: auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th { background: #f8fafc; text-align: left; padding: 15px; font-size: 0.75rem; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #eee;}
-        td { padding: 15px; border-top: 1px solid #f1f5f9; font-size: 0.9rem; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { background: #f8fafc; text-align: left; padding: 15px; font-size: 0.7rem; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #eee;}
+        td { padding: 15px; border-top: 1px solid #f1f5f9; font-size: 0.85rem; }
         
         .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         
@@ -183,6 +174,7 @@
         <span class="active" onclick="switchView('dashboard', this)">Home</span>
         <span onclick="switchView('daily', this)">Daily</span>
         <span onclick="switchView('weekly', this)">Weekly</span>
+        <span onclick="switchView('monthly', this)">Monthly</span>
         <span onclick="logout()" style="color:var(--danger)">Log Out</span>
     </div>
 </nav>
@@ -215,7 +207,7 @@
                     <h2 style="color: #64748b;">Loyverse Reference</h2>
                     <div id="loyverse-display" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; color: #1e293b;">₱0.00</div>
                     <input type="number" id="loyverse-input" placeholder="New Total" style="padding: 8px;">
-                    <button class="btn btn-primary" style="padding:px; font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Update Target</button>
+                    <button class="btn btn-primary" style="font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Update Target</button>
                 </div>
             </div>
 
@@ -270,7 +262,7 @@
         <div id="rep-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:20px;"></div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead>
+                <thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Verified User</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead>
                 <tbody id="rep-table"></tbody>
             </table>
         </div>
@@ -402,7 +394,7 @@
             shiftLogs.forEach((l, i) => {
                 const val = parseFloat(l.amt || l.amount) || 0;
                 const typeChar = l.type ? l.type.trim().toUpperCase()[0] : "?";
-                log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br><button class="btn-danger" style="margin-top:5px" onclick="askPwd('del', ${l.id})">Delete</button></div></div>`;
+                log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff} | ${l.google_name || 'System'}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br><button class="btn-danger" style="margin-top:5px" onclick="askPwd('del', ${l.id})">Delete</button></div></div>`;
             });
         }
 
@@ -421,7 +413,7 @@
         const googleName = loggedInUser.user_metadata.full_name || "Unknown User";
 
         document.getElementById('m-title').innerText = "Confirm " + type;
-        document.getElementById('m-body').innerHTML = `<b>Amt:</b> ₱${amt.toLocaleString()}<br><b>Staff:</b> ${staffInput}`;
+        document.getElementById('m-body').innerHTML = `<b>Amt:</b> ₱${amt.toLocaleString()}<br><b>Staff:</b> ${staffInput}<br><b>User:</b> ${googleName}`;
         
         const imgContainer = document.getElementById('m-imgs');
         imgContainer.innerHTML = '';
@@ -459,7 +451,7 @@
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById(id === 'dashboard' ? 'dashboard' : 'report').classList.add('active');
         el.classList.add('active');
-        if(id !== 'dashboard') { currentReportType = id.replace(' Report', '').toLowerCase(); setupFilterUI(currentReportType); }
+        if(id !== 'dashboard') { currentReportType = id.toLowerCase(); setupFilterUI(currentReportType); }
     }
 
     function clickInput(slot) { currentSlot = slot; document.getElementById('photo-input').click(); }
@@ -479,8 +471,11 @@
         const mIn = document.getElementById('filter-month');
         const lbl = document.getElementById('filter-label');
         const today = new Date().toISOString().split('T')[0];
-        if(type === 'monthly') { lbl.innerText = "Select Month:"; dIn.style.display="none"; mIn.style.display="block"; mIn.value=today.substring(0,7); }
-        else { lbl.innerText = type === 'daily' ? "Select Day:" : "Select Start Date:"; dIn.style.display="block"; mIn.style.display="none"; dIn.value=today; }
+        if(type === 'monthly') { 
+            lbl.innerText = "Select Month:"; dIn.style.display="none"; mIn.style.display="block"; mIn.value=today.substring(0,7); 
+        } else { 
+            lbl.innerText = type === 'daily' ? "Select Day:" : "Select Start Date:"; dIn.style.display="block"; mIn.style.display="none"; dIn.value=today; 
+        }
         buildReport();
     }
 
@@ -510,7 +505,7 @@
             if(t === "REVENUE") tr += val; else te += val;
             let photoHtml = '';
             if(l.photos) l.photos.forEach(p => { if(p) photoHtml += `<a href="${p}" target="_blank"><img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;"></a>`; });
-            table.innerHTML += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${l.type}</b></td><td>${l.staff}</td><td>${l.desc}</td><td>${l.chan}</td><td>${t === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td><td>${t === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td><td>${photoHtml}</td></tr>`;
+            table.innerHTML += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${l.type}</b></td><td>${l.staff}</td><td><small>${l.google_name || 'System'}</small></td><td>${l.desc}</td><td>${l.chan}</td><td>${t === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td><td>${t === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td><td>${photoHtml}</td></tr>`;
         });
         document.getElementById('rep-cards').innerHTML = `<div class="card dark-card"><h2>Period Revenue</h2><div class="net-total">₱${tr.toLocaleString()}</div></div><div class="card dark-card"><h2>Period Expenses</h2><div class="net-total" style="color:var(--danger)">₱${te.toLocaleString()}</div></div><div class="card dark-card"><h2>Period Net</h2><div class="net-total" style="color:#4ade80">₱${(tr-te).toLocaleString()}</div></div>`;
     }
