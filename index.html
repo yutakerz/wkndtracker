@@ -585,7 +585,7 @@
     function buildReport() {
         const table = document.getElementById('rep-table'); table.innerHTML = '';
         let tr = 0, te = 0, tPos = 0;
-        let sRev = 0, sExp = 0; // Local variables for selected range
+        let sRev = 0, sExp = 0;
         const dVal = document.getElementById('filter-date').value;
         const dEnd = document.getElementById('filter-date-end').value;
         const mVal = document.getElementById('filter-month').value;
@@ -593,8 +593,15 @@
         let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
         let expenseLabel = currentReportType === 'daily' ? "Period Expense Daily" : (currentReportType === 'weekly' ? "Period Expense Weekly" : "Period Expense Monthly");
         
+        // DYNAMIC BALANCE LABEL
+        let balanceLabel = "Overall Balance & Channels ";
+        if(currentReportType === 'daily') balanceLabel += "(On this Shift)";
+        else if(currentReportType === 'weekly') balanceLabel += "(On this Week)";
+        else balanceLabel += "(On this Month)";
+
         let repChansOverall = { Cash:0, GCash:0, Maya:0, BPI:0 };
         let repChansShift = { Cash:0, GCash:0, Maya:0, BPI:0 };
+        let repChansExp = { Cash:0, GCash:0, Maya:0, BPI:0 }; // NEW: Track expenses per channel for Box 4
 
         db.logs.forEach(l => {
             const val = parseFloat(l.amt || l.amount) || 0;
@@ -619,7 +626,10 @@
 
             if(inRange) {
                 if(t === "REVENUE") { sRev += val; if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; }
-                else if (t === "EXPENSE") { sExp += val; } // Tracks expenses for Box 2
+                else if (t === "EXPENSE") { 
+                    sExp += val; 
+                    if(repChansExp.hasOwnProperty(c)) repChansExp[c] += val; // NEW: Add specific expense to channel
+                }
                 else if (t === "POS_REF") { tPos += val; }
 
                 if(t !== 'POS_REF') {
@@ -641,9 +651,12 @@
         let shiftChanHtml = '';
         for(let [k,v] of Object.entries(repChansShift)) { shiftChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
 
+        let expChanHtml = ''; // NEW HTML: Expense per channel
+        for(let [k,v] of Object.entries(repChansExp)) { expChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
+
         document.getElementById('rep-cards').innerHTML = `
             <div class="card">
-                <h2 style="color:#64748b">Period Balance & Channels</h2>
+                <h2 style="color:#64748b">${balanceLabel}</h2>
                 <div class="net-total" style="color:#1e293b; font-size: 1.6rem;">₱${(tr - te).toLocaleString()}</div>
                 <div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:8px;">
                     <span>Rev: <b style="color:var(--success)">₱${tr.toLocaleString()}</b></span>
@@ -666,7 +679,9 @@
 
             <div class="card">
                 <h2 style="color: #64748b;">${expenseLabel}</h2>
-                <div style="font-size:1.6rem; font-weight:800; color:var(--danger);">₱${sExp.toLocaleString()}</div>
+                <div class="net-total" style="font-size:1.6rem; font-weight:800; color:var(--danger);">₱${sExp.toLocaleString()}</div>
+                <div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>
+                ${expChanHtml}
             </div>
         `;
     }
