@@ -36,24 +36,29 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- TOP NAV (MINIMALIST) --- */
+        /* --- LIQUID GLASS CAPSULE NAV --- */
         nav { 
             position: fixed; 
-            top: 0; left: 0; right: 0; 
-            background: rgba(62, 87, 61, 0.95); 
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            bottom: 30px; /* Floating at the bottom */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 450px;
+            background: rgba(49, 78, 49, 0.459); /* Dark Glass Tint */
+            backdrop-filter: blur(13px); -webkit-backdrop-filter: blur(20px);
             color: white; 
             display: flex; align-items: center; justify-content: center; 
-            padding: calc(10px + env(safe-area-inset-top)) 20px 15px 20px;
+            padding: 8px;
             z-index: 2000; 
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+            border-radius: 50px; /* The Capsule Shape */
+            border: 1px solid rgba(255, 255, 255, 0.452); /* Glass Edge */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25); 
         }
 
         .container { 
             padding: 20px; 
-            padding-top: 140px; 
-            padding-bottom: 40px; 
+            padding-top: 40px; /* Reduced since nav is at bottom */
+            padding-bottom: 120px; /* Increased to account for floating nav */
             max-width: 1400px; margin: 0 auto; 
         }
 
@@ -78,18 +83,26 @@
         
         .google-btn { background: white; border: none; color: #3c4043; padding: 12px 24px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; width: 100%; transition: 0.2s; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
-        .nav-links { display: flex; gap: 20px; width: 100%; justify-content: center; }
+        .nav-links { display: flex; gap: 5px; width: 100%; justify-content: space-between; }
         .nav-links span { 
             cursor: pointer; 
-            font-weight: 600; 
-            font-size: 0.85rem; 
+            font-weight: 500; 
+            font-size: 0.75rem; 
             opacity: 0.6; 
             text-align: center; 
-            padding: 5px; 
-            letter-spacing: 0.5px;
-            transition: opacity 0.2s;
+            padding: 12px 16px; 
+            border-radius: 40px; /* Capsule buttons */
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid transparent;
         }
-        .nav-links span.active { opacity: 1; color: var(--primary); border-bottom: 2px solid var(--primary); }
+        .nav-links span.active { 
+            opacity: 1; 
+            background: rgba(255,255,255,0.15); /* Active Glass Highlight */
+            color: white; 
+            font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
         
         .view { display: none; animation: fadeIn 0.3s ease; }
         .view.active { display: block; }
@@ -219,7 +232,7 @@
                     <h2 style="color: #64748b;">Shift Net (8AM Reset)</h2>
                     <div class="net-total" id="daily-net" style="font-size: 1.8rem; color: var(--success);">₱0.00</div>
                     <div style="margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                    </div>
+                        </div>
                     <div id="channel-stats-daily"></div>
                 </div>
 
@@ -452,6 +465,7 @@
         
         const pstNow = await getPSTTime();
 
+        // UPDATED CONFIRMATION BOX CONTENT (User Hidden, Channel Added)
         document.getElementById('m-title').innerText = "Confirm " + type;
         document.getElementById('m-body').innerHTML = `
             <b>Amt:</b> ₱${amt.toLocaleString()}<br>
@@ -469,7 +483,19 @@
             notify("Syncing...", "⏳");
             let urls = [];
             for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) urls.push(url); } }
-            const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
+            const entry = { 
+                type: type.toUpperCase(), 
+                amt, 
+                chan, 
+                desc, 
+                staff: staffInput, 
+                auth_user: loggedInUser.email, 
+                google_name: loggedInUser.user_metadata.full_name, 
+                photos: urls, 
+                time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), 
+                date: pstNow.toLocaleDateString(), 
+                isoDate: getShiftDate(pstNow) 
+            };
             const { error } = await _supabase.from('transactions').insert([entry]);
             if (!error) { closeModal(); notify("Cloud Synced!", "✅"); clearForm(); }
             else { notify("Error Saving", "❌"); }
