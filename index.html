@@ -219,7 +219,7 @@
                 <div class="card dark-card">
                     <h2>Overall Balance & Channels</h2>
                     <div class="net-total" id="total-net">₱0.00</div>
-                    <div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px;">
+                    <div style="display:flex; justify-content: space-between; font-size: 0.7rem; color:#94a3b8; margin-bottom: 10px;">
                         <span>All-Time Rev: <b id="total-rev" style="color:var(--success)">₱0</b></span>
                         <span>All-Time Exp: <b id="total-exp" style="color:var(--danger)">₱0</b></span>
                     </div>
@@ -229,15 +229,16 @@
                 <div class="card">
                     <h2 style="color: #64748b;">Shift Net (8AM Reset)</h2>
                     <div class="net-total" id="daily-net" style="color: var(--success); font-size: 1.6rem;">₱0.00</div>
-                    <div style="margin-bottom: 6px; border-bottom: 1px solid #eee;"></div>
+                    <div style="margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                        </div>
                     <div id="channel-stats-daily"></div>
                 </div>
 
                 <div class="card">
                     <h2 style="color: #64748b;">Loyverse Total Profit</h2>
-                    <div id="loyverse-display" style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #1e293b;">₱0.00</div>
-                    <input type="number" id="loyverse-input" placeholder="New Total" style="padding: 8px; font-size: 0.9rem;">
-                    <button class="btn btn-primary" style="font-size: 0.8rem; margin-top: 8px; padding: 10px;" onclick="updateLoyverse()">Confirm</button>
+                    <div id="loyverse-display" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; color: #1e293b;">₱0.00</div>
+                    <input type="number" id="loyverse-input" placeholder="New Total" style="padding: 8px;">
+                    <button class="btn btn-primary" style="font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Confirm</button>
                 </div>
             </div>
 
@@ -281,17 +282,17 @@
 
     <div id="report" class="view">
         <div class="report-header">
-            <h1 id="rep-title" style="margin:0; font-size: 1.2rem;">Reports</h1>
-            <button class="btn btn-primary" style="width:auto; padding:8px 20px; font-size: 0.8rem;" onclick="window.print()">Print PDF</button>
+            <h1 id="rep-title" style="margin:0">Reports</h1>
+            <button class="btn btn-primary" style="width:auto; padding:10px 30px;" onclick="window.print()">Print PDF</button>
         </div>
         <div class="filter-section">
-            <label id="filter-label" style="font-weight: bold; font-size: 0.8rem;"></label>
-            <input type="date" id="filter-date" style="width: auto; padding: 6px;" onchange="updateReportFilter()">
-            <input type="date" id="filter-date-end" style="width: auto; display:none; padding: 6px;" onchange="updateReportFilter()">
-            <input type="month" id="filter-month" style="width: auto; display: none; padding: 6px;" onchange="updateReportFilter()">
+            <label id="filter-label" style="font-weight: bold; font-size: 0.9rem;"></label>
+            <input type="date" id="filter-date" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
+            <input type="date" id="filter-date-end" style="width: auto; margin-bottom: 0; display:none;" onchange="updateReportFilter()">
+            <input type="month" id="filter-month" style="width: auto; margin-bottom: 0; display: none;" onchange="updateReportFilter()">
         </div>
         
-        <div id="rep-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:10px; margin-bottom:12px;"></div>
+        <div id="rep-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:10px; margin-bottom:20px;"></div>
         
         <div class="table-wrap">
             <table>
@@ -302,7 +303,7 @@
     </div>
 </div>
 
-<div id="modal" class="modal"><div class="modal-content"><h3 id="m-title"></h3><div id="m-body" style="text-align:left; background:#f8fafc; padding:15px; border-radius:12px; margin:15px 0; font-size: 0.9rem;"></div><div id="m-imgs" style="display:flex; gap:5px; margin-bottom:15px; justify-content:center;"></div><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closeModal()">Cancel</button><button id="m-confirm" class="btn btn-primary">Confirm</button></div></div></div>
+<div id="modal" class="modal"><div class="modal-content"><h3 id="m-title"></h3><div id="m-body" style="text-align:left; background:#f8fafc; padding:20px; border-radius:15px; margin:20px 0;"></div><div id="m-imgs" style="display:flex; gap:5px; margin-bottom:15px; justify-content:center;"></div><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closeModal()">Cancel</button><button id="m-confirm" class="btn btn-primary">Confirm</button></div></div></div>
 <div id="pwd-modal" class="modal"><div class="modal-content"><h3>Admin Security</h3><p style="font-size:0.8rem; opacity:0.6;">Password Required</p><input type="password" id="p-input" style="text-align:center; margin-bottom:15px;"><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closePwd()">Cancel</button><button id="p-confirm" class="btn btn-success">Unlock</button></div></div></div>
 
 <script>
@@ -380,6 +381,7 @@
                 const val = parseFloat(l.amt || l.amount) || 0;
                 const type = (l.type || "").trim().toUpperCase();
                 const chan = (l.chan || "").trim();
+                // HOME LOGIC: Overall Balance subtracts expenses
                 if (type === "REVENUE") { if (db.chans.hasOwnProperty(chan)) db.chans[chan] += val; }
                 else if (type === "EXPENSE") { if (db.chans.hasOwnProperty(chan)) db.chans[chan] -= val; }
             });
@@ -432,11 +434,12 @@
         document.getElementById('total-net').innerText = "₱"+(tr - te).toLocaleString();
         document.getElementById('total-rev').innerText = "₱"+tr.toLocaleString();
         document.getElementById('total-exp').innerText = "₱"+te.toLocaleString();
-        // UPDATED: SHIFT NET = REVENUE ONLY (NO EXPENSE SUBTRACTION HERE)
+        // SHIFT NET = REVENUE ONLY
         document.getElementById('daily-net').innerText = "₱"+dRev.toLocaleString();
         
         const pd = document.getElementById('loyverse-display'); pd.innerText = "₱"+dPos.toLocaleString(); pd.style.color = (dRev >= dPos && dPos > 0) ? "#4ade80" : "#1e293b";
 
+        // RESTORED RECENT TRANSACTIONS FOR CURRENT SHIFT
         const shiftLogs = db.logs.filter(l => l.isoDate === currentShiftDate && l.type !== 'POS_REF').slice(0, 20);
         const log = document.getElementById('log-list'); log.innerHTML = '';
         if (shiftLogs.length === 0) { log.innerHTML = `<div style="text-align:center; padding:15px; color:#94a3b8; font-size:0.75rem;">No transactions this shift</div>`; }
@@ -479,19 +482,7 @@
             notify("Syncing...", "⏳");
             let urls = [];
             for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) urls.push(url); } }
-            const entry = { 
-                type: type.toUpperCase(), 
-                amt, 
-                chan, 
-                desc, 
-                staff: staffInput, 
-                auth_user: loggedInUser.email, 
-                google_name: loggedInUser.user_metadata.full_name, 
-                photos: urls, 
-                time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), 
-                date: pstNow.toLocaleDateString(), 
-                isoDate: getShiftDate(pstNow) 
-            };
+            const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
             const { error } = await _supabase.from('transactions').insert([entry]);
             if (!error) { closeModal(); notify("Cloud Synced!", "✅"); clearForm(); }
             else { notify("Error Saving", "❌"); }
@@ -532,25 +523,16 @@
 
     function switchView(id, el) {
         const container = document.querySelector('.container');
-        
-        // Start Fade Out & Slide Down Animation
         container.style.opacity = '0';
         container.style.transform = 'translateY(15px)';
         
         setTimeout(() => {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
-            
             const target = id === 'dashboard' ? 'dashboard' : 'report';
             document.getElementById(target).classList.add('active');
             el.classList.add('active');
-            
-            if(id !== 'dashboard') { 
-                currentReportType = id.toLowerCase(); 
-                setupFilterUI(currentReportType); 
-            }
-            
-            // Fade In & Slide Up Animation
+            if(id !== 'dashboard') { currentReportType = id.toLowerCase(); setupFilterUI(currentReportType); }
             container.style.opacity = '1';
             container.style.transform = 'translateY(0)';
         }, 300);
@@ -595,42 +577,59 @@
         let repChansOverall = { Cash:0, GCash:0, Maya:0, BPI:0 };
         let repChansShift = { Cash:0, GCash:0, Maya:0, BPI:0 };
 
-        const filteredLogs = db.logs.filter(l => {
-            if (currentReportType === 'weekly') { 
-                if(!dVal || !dEnd) return false;
-                const ld = new Date(l.isoDate), start = new Date(dVal), end = new Date(dEnd);
-                return ld >= start && ld <= end;
-            }
-            else if (currentReportType === 'daily') { return l.isoDate === dVal; }
-            else return l.isoDate.startsWith(mVal);
-        }).sort((a,b)=>b.id-a.id);
-
-        filteredLogs.forEach(l => {
+        db.logs.forEach(l => {
             const val = parseFloat(l.amt || l.amount) || 0;
             const t = (l.type || "").trim().toUpperCase();
             const c = (l.chan || "").trim();
+            const logDate = l.isoDate;
 
-            if(t === "REVENUE") { 
-                tr += val; 
-                sRev += val;
-                if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] += val; 
-                if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; 
-            } 
-            else if (t === "EXPENSE") { 
-                te += val; 
-                if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
-            } 
-            else if (t === "POS_REF") { tPos += val; }
-            
-            if(t !== 'POS_REF') {
-                let photoHtml = '';
-                if(l.photos && Array.isArray(l.photos)) {
-                    const photosJson = JSON.stringify(l.photos).replace(/"/g, '&quot;');
-                    l.photos.forEach((p, idx) => { 
-                        if(p) photoHtml += `<img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;border:1px solid #ddd;cursor:pointer;" onclick="openLightbox(${photosJson}, ${idx})">`; 
-                    });
+            // BOX 1 LOGIC (Period Balance)
+            let addToBalance = false;
+            if(currentReportType === 'daily') {
+                // DAILY: Cumulative (Total from very first up to selected day)
+                addToBalance = (logDate <= dVal);
+            } else if(currentReportType === 'weekly') {
+                // WEEKLY: Strict Range (Disregard history outside range)
+                if(dVal && dEnd) addToBalance = (logDate >= dVal && logDate <= dEnd);
+            } else {
+                // MONTHLY: Strict Month
+                if(mVal) addToBalance = logDate.startsWith(mVal);
+            }
+
+            if (addToBalance) {
+                if(t === "REVENUE") { 
+                    tr += val; 
+                    if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] += val; 
+                } 
+                else if (t === "EXPENSE") { 
+                    te += val; 
+                    if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val; 
+                } 
+            }
+
+            // BOX 2 & TABLE LOGIC (Strict Selected Period Only)
+            let inRange = false;
+            if (currentReportType === 'daily') { inRange = (logDate === dVal); }
+            else if (currentReportType === 'weekly') { inRange = (logDate >= dVal && logDate <= dEnd); }
+            else { inRange = logDate.startsWith(mVal); }
+
+            if(inRange) {
+                if(t === "REVENUE") { 
+                    sRev += val;
+                    if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; 
                 }
-                table.innerHTML += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${l.type}</b></td><td>${l.staff}</td><td><small>${l.google_name || 'System'}</small></td><td>${l.desc}</td><td>${l.chan}</td><td>${t === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td><td>${t === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td><td>${photoHtml}</td></tr>`;
+                else if (t === "POS_REF") { tPos += val; }
+
+                if(t !== 'POS_REF') {
+                    let photoHtml = '';
+                    if(l.photos && Array.isArray(l.photos)) {
+                        const photosJson = JSON.stringify(l.photos).replace(/"/g, '&quot;');
+                        l.photos.forEach((p, idx) => { 
+                            if(p) photoHtml += `<img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;border:1px solid #ddd;cursor:pointer;" onclick="openLightbox(${photosJson}, ${idx})">`; 
+                        });
+                    }
+                    table.innerHTML += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${l.type}</b></td><td>${l.staff}</td><td>${l.desc}</td><td>${l.chan}</td><td>${t === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td><td>${t === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td><td>${photoHtml}</td></tr>`;
+                }
             }
         });
 
@@ -643,39 +642,26 @@
         document.getElementById('rep-cards').innerHTML = `
             <div class="card">
                 <h2 style="color:#64748b">Period Balance & Channels</h2>
-                <div class="net-total" style="color:#1e293b">₱${(tr - te).toLocaleString()}</div>
-                <div style="display:flex; justify-content: space-between; font-size: 0.7rem; color:#94a3b8; margin-bottom: 10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <div class="net-total" style="color:#1e293b; font-size: 1.6rem;">₱${(tr - te).toLocaleString()}</div>
+                <div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:8px;">
                     <span>Rev: <b style="color:var(--success)">₱${tr.toLocaleString()}</b></span>
                     <span>Exp: <b style="color:var(--danger)">₱${te.toLocaleString()}</b></span>
                 </div>
                 ${overallChanHtml}
-                <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
-                    <h2 style="margin:0; font-size:0.7rem; color:#64748b;">${loyverseLabel}</h2>
-                    <div style="font-size:1.2rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div>
+                <div style="margin-top:10px; border-top:1px solid #eee; padding-top:8px;">
+                    <h2 style="margin:0; font-size:0.6rem; color:#64748b;">${loyverseLabel}</h2>
+                    <div style="font-size:1.1rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div>
                 </div>
             </div>
             
             <div class="card">
                 <h2 style="color: #64748b;">Shift Net (8AM Reset)</h2>
-                <div class="net-total" style="font-size: 1.8rem; color: var(--success);">₱${sRev.toLocaleString()}</div>
-                <div style="margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                </div>
+                <div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div>
+                <div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>
                 ${shiftChanHtml}
             </div>`;
     }
 
-    function askPwd(act, targetId) {
-        document.getElementById('pwd-modal').style.display = 'flex';
-        document.getElementById('p-confirm').onclick = async () => {
-            if(document.getElementById('p-input').value === KEY) {
-                if(act === 'reset') { await _supabase.from('transactions').delete().neq('id', 0); location.reload(); }
-                else { await _supabase.from('transactions').delete().eq('id', targetId); }
-                closePwd(); notify("Confirmed!", "🔓");
-            } else notify("Wrong!", "❌");
-        };
-    }
-
-    function notify(m, i) { const a = document.getElementById('cool-alert'); document.getElementById('alert-icon').innerText = i; document.getElementById('alert-msg').innerText = m; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'), 3000); }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
     function closePwd() { document.getElementById('pwd-modal').style.display = 'none'; document.getElementById('p-input').value=''; }
     function clearForm() {
@@ -683,6 +669,7 @@
         document.getElementById('rev-staff').value=''; document.getElementById('exp-staff').value='';
         tempPhotos = []; for(let i=0; i<4; i++) { document.getElementById(`slot-${i}`).innerHTML = ''; document.getElementById(`slot-${i}`).classList.remove('has-img'); }
     }
+    function notify(m, i) { const a = document.getElementById('cool-alert'); document.getElementById('alert-icon').innerText = i; document.getElementById('alert-msg').innerText = m; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'), 3000); }
     
     checkUser();
 </script>
