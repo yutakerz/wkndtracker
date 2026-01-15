@@ -39,27 +39,28 @@
         /* --- LIQUID GLASS CAPSULE NAV --- */
         nav { 
             position: fixed; 
-            bottom: 30px; /* Floating at the bottom */
+            bottom: 30px; 
             left: 50%;
             transform: translateX(-50%);
             width: 92%;
             max-width: 450px;
-            background: rgba(49, 78, 49, 0.459); /* Dark Glass Tint */
-            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(20px);
-            color: white; 
+            background: rgba(255, 255, 255, 0.459); 
+            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(20px);
+            color: rgb(119, 119, 119); 
             display: flex; align-items: center; justify-content: center; 
             padding: 8px;
             z-index: 2000; 
-            border-radius: 50px; /* The Capsule Shape */
-            border: 1px solid rgba(255, 255, 255, 0.452); /* Glass Edge */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25); 
+            border-radius: 50px; 
+            border: 1px solid rgba(255, 255, 255, 0.452); 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.341); 
         }
 
         .container { 
             padding: 20px; 
-            padding-top: 40px; /* Reduced since nav is at bottom */
-            padding-bottom: 120px; /* Increased to account for floating nav */
+            padding-top: 40px; 
+            padding-bottom: 120px; 
             max-width: 1400px; margin: 0 auto; 
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         html { background-color: var(--bg); height: 100%; }
@@ -91,20 +92,20 @@
             opacity: 0.6; 
             text-align: center; 
             padding: 12px 16px; 
-            border-radius: 40px; /* Capsule buttons */
+            border-radius: 40px; 
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             border: 1px solid transparent;
         }
         .nav-links span.active { 
             opacity: 1; 
-            background: rgba(255,255,255,0.15); /* Active Glass Highlight */
-            color: white; 
+            background: rgba(255,255,255,0.5); 
+            color: rgb(13, 52, 8); 
             font-weight: 700;
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         
-        .view { display: none; animation: fadeIn 0.3s ease; }
+        .view { display: none; }
         .view.active { display: block; }
         
         .dashboard-grid { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
@@ -145,11 +146,9 @@
         .cool-alert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: var(--dark-card); color: white; padding: 15px 30px; border-radius: 50px; z-index: 10000; transition: 0.5s; border: 2px solid var(--primary); display: flex; gap: 10px; }
         .cool-alert.show { top: 20px; }
         
-        /* OVERLAYS */
         .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 4000; padding: 20px; }
         .modal-content { background: white; padding: 30px; border-radius: 24px; width: 100%; max-width: 420px; text-align: center; }
         
-        /* IMAGE LIGHTBOX STYLE */
         #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
         #lightbox img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 10px; }
         .lightbox-close { position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; color: white; font-size: 2rem; cursor: pointer; }
@@ -207,10 +206,10 @@
 <nav id="main-nav" style="display:none;">
     <div class="nav-links">
         <span class="active" onclick="switchView('dashboard', this)">Home</span>
-        <span onclick="switchView('daily', this)">Daily</span>
-        <span onclick="switchView('weekly', this)">Weekly</span>
-        <span onclick="switchView('monthly', this)">Monthly</span>
-        <span onclick="logout()" style="color:var(--danger)">Log Out</span>
+        <span onclick="switchView('daily', this)">Day</span>
+        <span onclick="switchView('weekly', this)">Week</span>
+        <span onclick="switchView('monthly', this)">Month</span>
+        <span onclick="logout()" style="color:var(--danger)">Exit</span>
     </div>
 </nav>
 
@@ -465,7 +464,6 @@
         
         const pstNow = await getPSTTime();
 
-        // UPDATED CONFIRMATION BOX CONTENT (User Hidden, Channel Added)
         document.getElementById('m-title').innerText = "Confirm " + type;
         document.getElementById('m-body').innerHTML = `
             <b>Amt:</b> ₱${amt.toLocaleString()}<br>
@@ -483,19 +481,7 @@
             notify("Syncing...", "⏳");
             let urls = [];
             for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) urls.push(url); } }
-            const entry = { 
-                type: type.toUpperCase(), 
-                amt, 
-                chan, 
-                desc, 
-                staff: staffInput, 
-                auth_user: loggedInUser.email, 
-                google_name: loggedInUser.user_metadata.full_name, 
-                photos: urls, 
-                time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), 
-                date: pstNow.toLocaleDateString(), 
-                isoDate: getShiftDate(pstNow) 
-            };
+            const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
             const { error } = await _supabase.from('transactions').insert([entry]);
             if (!error) { closeModal(); notify("Cloud Synced!", "✅"); clearForm(); }
             else { notify("Error Saving", "❌"); }
@@ -535,11 +521,29 @@
     function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
 
     function switchView(id, el) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
-        document.getElementById(id === 'dashboard' ? 'dashboard' : 'report').classList.add('active');
-        el.classList.add('active');
-        if(id !== 'dashboard') { currentReportType = id.toLowerCase(); setupFilterUI(currentReportType); }
+        const container = document.querySelector('.container');
+        
+        // Start Fade Out & Slide Down Animation
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+            
+            const target = id === 'dashboard' ? 'dashboard' : 'report';
+            document.getElementById(target).classList.add('active');
+            el.classList.add('active');
+            
+            if(id !== 'dashboard') { 
+                currentReportType = id.toLowerCase(); 
+                setupFilterUI(currentReportType); 
+            }
+            
+            // Fade In & Slide Up Animation
+            container.style.opacity = '1';
+            container.style.transform = 'translateY(0)';
+        }, 300);
     }
 
     function clickInput(slot) { currentSlot = slot; document.getElementById('photo-input').click(); }
