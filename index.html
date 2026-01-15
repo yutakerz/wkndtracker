@@ -36,29 +36,48 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- LIQUID GLASS CAPSULE NAV --- */
+        /* --- LIQUID GLASS CAPSULE NAV (iOS STYLE) --- */
         nav { 
             position: fixed; 
             bottom: 30px; 
             left: 50%;
             transform: translateX(-50%);
-            width: 92%;
-            max-width: 450px;
-            background: rgba(255, 255, 255, 0.459); 
-            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(3px);
-            color: rgb(119, 119, 119); 
+            width: auto;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.6); /* Darker glass for contrast */
+            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); /* Heavy liquid blur */
             display: flex; align-items: center; justify-content: center; 
-            padding: 8px;
+            padding: 6px;
             z-index: 2000; 
-            border-radius: 50px; 
-            border: 1px solid rgba(255, 255, 255, 0.452); 
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.341); 
+            border-radius: 100px; /* Full Capsule */
+            border: 1px solid rgba(255, 255, 255, 0.15); 
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); 
+        }
+
+        .nav-links { display: flex; gap: 5px; }
+        
+        .nav-links span { 
+            cursor: pointer; 
+            font-weight: 500; 
+            font-size: 0.75rem; 
+            color: rgba(0, 0, 0, 0.6);
+            text-align: center; 
+            padding: 10px 20px; 
+            border-radius: 100px; /* Individual Capsules */
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        .nav-links span.active { 
+            background: rgba(255, 255, 255, 0.95); 
+            color: #1e293b; 
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
         .container { 
-            padding: 20px; 
-            padding-top: calc(20px + env(safe-area-inset-top));
-            padding-bottom: 120px; 
+            padding: 10px; /* Reduced outer padding */
+            padding-top: calc(15px + env(safe-area-inset-top)); 
+            padding-bottom: 100px; 
             max-width: 1400px; margin: 0 auto; 
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
@@ -84,74 +103,54 @@
         
         .google-btn { background: white; border: none; color: #3c4043; padding: 12px 24px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; width: 100%; transition: 0.2s; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
-        .nav-links { display: flex; gap: 5px; width: 100%; justify-content: space-between; }
-        .nav-links span { 
-            cursor: pointer; 
-            font-weight: 500; 
-            font-size: 0.75rem; 
-            opacity: 0.6; 
-            text-align: center; 
-            padding: 12px 16px; 
-            border-radius: 40px; 
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            border: 1px solid transparent;
-        }
-        .nav-links span.active { 
-            opacity: 1; 
-            background: rgba(255,255,255,0.5); 
-            color: rgb(13, 52, 8); 
-            font-weight: 700;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        
         .view { display: none; }
         .view.active { display: block; }
         
-        .dashboard-grid { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
+        .dashboard-grid { display: grid; grid-template-columns: 320px 1fr; gap: 10px; } /* Compact Gap */
         @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } }
         
-        .card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        /* COMPACT CARD STYLING */
+        .card { background: white; padding: 12px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .dark-card { background: var(--dark-card); color: white; border: none; }
-        h2 { margin-top: 0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 12px; }
+        h2 { margin-top: 0; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; margin-bottom: 8px; }
         .dark-card h2 { color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .net-total { font-size: 2.2rem; font-weight: 800; color: #4ade80; margin: 5px 0; }
-        .channel-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+        .net-total { font-size: 1.8rem; font-weight: 800; color: #4ade80; margin: 0; line-height: 1.1; }
+        .channel-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; }
         .dark-card .channel-row { border-bottom: 1px solid rgba(255,255,255,0.05); }
         .val { font-weight: 700; color: #1e293b; }
         .dark-card .val { color: #f8fafc; }
         
-        .input-stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem; background: #fff; }
+        .input-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; background: #fff; }
         
-        .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
+        .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
         .photo-slot { aspect-ratio: 1/1; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; }
         .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
         .photo-slot::after { content: '+'; font-size: 1.2rem; color: #cbd5e1; }
         .photo-slot.has-img::after { content: ''; }
         
-        .btn { border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn { border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; }
         .btn-success { background: var(--success); color: white; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-danger { background: #fee2e2; color: var(--danger); font-size: 0.75rem; width: auto; padding: 5px 10px; border-radius: 6px;}
         
-        .table-wrap { overflow-x: auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
-        th { background: #f8fafc; text-align: left; padding: 15px; font-size: 0.7rem; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #eee;}
-        td { padding: 15px; border-top: 1px solid #f1f5f9; font-size: 0.85rem; }
+        .table-wrap { overflow-x: auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { background: #f8fafc; text-align: left; padding: 10px; font-size: 0.65rem; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #eee;}
+        td { padding: 10px; border-top: 1px solid #f1f5f9; font-size: 0.8rem; }
         
-        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .filter-section { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; border: 1px solid #e2e8f0; flex-wrap: wrap; }
+        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .filter-section { background: white; padding: 10px; border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; border: 1px solid #e2e8f0; flex-wrap: wrap; }
         
         .cool-alert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: var(--dark-card); color: white; padding: 15px 30px; border-radius: 50px; z-index: 10000; transition: 0.5s; border: 2px solid var(--primary); display: flex; gap: 10px; }
         .cool-alert.show { top: 20px; }
         
         .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 4000; padding: 20px; }
-        .modal-content { background: white; padding: 30px; border-radius: 24px; width: 100%; max-width: 420px; text-align: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 24px; width: 100%; max-width: 380px; text-align: center; }
         
         #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
         #lightbox img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 10px; }
-        .lightbox-close { position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; color: white; font-size: 2rem; cursor: pointer; }
+        .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; }
         .lightbox-nav { position: absolute; bottom: 50px; display: flex; gap: 30px; width: 100%; justify-content: center; }
         .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; cursor: pointer; }
 
@@ -219,8 +218,8 @@
             <div class="side-col">
                 <div class="card dark-card">
                     <h2>Overall Balance & Channels</h2>
-                    <div class="net-total" id="total-net" style="font-size: 1.8rem;">₱0.00</div>
-                    <div style="display:flex; justify-content: space-between; font-size: 0.7rem; color:#94a3b8; margin-bottom: 10px;">
+                    <div class="net-total" id="total-net">₱0.00</div>
+                    <div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px;">
                         <span>All-Time Rev: <b id="total-rev" style="color:var(--success)">₱0</b></span>
                         <span>All-Time Exp: <b id="total-exp" style="color:var(--danger)">₱0</b></span>
                     </div>
@@ -229,22 +228,21 @@
 
                 <div class="card">
                     <h2 style="color: #64748b;">Shift Net (8AM Reset)</h2>
-                    <div class="net-total" id="daily-net" style="font-size: 1.8rem; color: var(--success);">₱0.00</div>
-                    <div style="margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                        </div>
+                    <div class="net-total" id="daily-net" style="color: var(--success); font-size: 1.6rem;">₱0.00</div>
+                    <div style="margin-bottom: 6px; border-bottom: 1px solid #eee;"></div>
                     <div id="channel-stats-daily"></div>
                 </div>
 
                 <div class="card">
                     <h2 style="color: #64748b;">Loyverse Total Profit</h2>
-                    <div id="loyverse-display" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; color: #1e293b;">₱0.00</div>
-                    <input type="number" id="loyverse-input" placeholder="New Total" style="padding: 8px;">
-                    <button class="btn btn-primary" style="font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Confirm</button>
+                    <div id="loyverse-display" style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; color: #1e293b;">₱0.00</div>
+                    <input type="number" id="loyverse-input" placeholder="New Total" style="padding: 8px; font-size: 0.9rem;">
+                    <button class="btn btn-primary" style="font-size: 0.8rem; margin-top: 8px; padding: 10px;" onclick="updateLoyverse()">Confirm</button>
                 </div>
             </div>
 
             <div class="main-col">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
                     <div class="card">
                         <h2 style="color: #64748b;">Daily Post Sales</h2>
                         <div class="input-stack">
@@ -252,7 +250,7 @@
                             <input type="text" id="rev-staff" placeholder="Put Your Name">
                             <select id="rev-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option><option>Others</option></select>
                         </div>
-                        <label style="font-size: 0.65rem; color: #94a3b8; margin-bottom: 5px; display: block;">RECEIPT PHOTOS (MAX 4)</label>
+                        <label style="font-size: 0.6rem; color: #94a3b8; margin-bottom: 5px; display: block;">RECEIPT PHOTOS (MAX 4)</label>
                         <div class="photo-grid">
                             <div class="photo-slot" onclick="clickInput(0)" id="slot-0"></div>
                             <div class="photo-slot" onclick="clickInput(1)" id="slot-1"></div>
@@ -275,7 +273,7 @@
                 </div>
                 <div class="card">
                     <h2 style="color: #64748b;">Recent Transactions</h2>
-                    <div id="log-list" style="max-height:500px; overflow-y:auto;"></div>
+                    <div id="log-list" style="max-height:400px; overflow-y:auto;"></div>
                 </div>
             </div>
         </div>
@@ -283,28 +281,28 @@
 
     <div id="report" class="view">
         <div class="report-header">
-            <h1 id="rep-title" style="margin:0">Reports</h1>
-            <button class="btn btn-primary" style="width:auto; padding:10px 30px;" onclick="window.print()">Print PDF</button>
+            <h1 id="rep-title" style="margin:0; font-size: 1.2rem;">Reports</h1>
+            <button class="btn btn-primary" style="width:auto; padding:8px 20px; font-size: 0.8rem;" onclick="window.print()">Print PDF</button>
         </div>
         <div class="filter-section">
-            <label id="filter-label" style="font-weight: bold; font-size: 0.9rem;"></label>
-            <input type="date" id="filter-date" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
-            <input type="date" id="filter-date-end" style="width: auto; margin-bottom: 0; display:none;" onchange="updateReportFilter()">
-            <input type="month" id="filter-month" style="width: auto; margin-bottom: 0; display: none;" onchange="updateReportFilter()">
+            <label id="filter-label" style="font-weight: bold; font-size: 0.8rem;"></label>
+            <input type="date" id="filter-date" style="width: auto; padding: 6px;" onchange="updateReportFilter()">
+            <input type="date" id="filter-date-end" style="width: auto; display:none; padding: 6px;" onchange="updateReportFilter()">
+            <input type="month" id="filter-month" style="width: auto; display: none; padding: 6px;" onchange="updateReportFilter()">
         </div>
         
-        <div id="rep-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-bottom:20px;"></div>
+        <div id="rep-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:10px; margin-bottom:12px;"></div>
         
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Verified User</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead>
+                <thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead>
                 <tbody id="rep-table"></tbody>
             </table>
         </div>
     </div>
 </div>
 
-<div id="modal" class="modal"><div class="modal-content"><h3 id="m-title"></h3><div id="m-body" style="text-align:left; background:#f8fafc; padding:20px; border-radius:15px; margin:20px 0;"></div><div id="m-imgs" style="display:flex; gap:5px; margin-bottom:15px; justify-content:center;"></div><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closeModal()">Cancel</button><button id="m-confirm" class="btn btn-primary">Confirm</button></div></div></div>
+<div id="modal" class="modal"><div class="modal-content"><h3 id="m-title"></h3><div id="m-body" style="text-align:left; background:#f8fafc; padding:15px; border-radius:12px; margin:15px 0; font-size: 0.9rem;"></div><div id="m-imgs" style="display:flex; gap:5px; margin-bottom:15px; justify-content:center;"></div><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closeModal()">Cancel</button><button id="m-confirm" class="btn btn-primary">Confirm</button></div></div></div>
 <div id="pwd-modal" class="modal"><div class="modal-content"><h3>Admin Security</h3><p style="font-size:0.8rem; opacity:0.6;">Password Required</p><input type="password" id="p-input" style="text-align:center; margin-bottom:15px;"><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closePwd()">Cancel</button><button id="p-confirm" class="btn btn-success">Unlock</button></div></div></div>
 
 <script>
@@ -434,19 +432,19 @@
         document.getElementById('total-net').innerText = "₱"+(tr - te).toLocaleString();
         document.getElementById('total-rev').innerText = "₱"+tr.toLocaleString();
         document.getElementById('total-exp').innerText = "₱"+te.toLocaleString();
-        document.getElementById('daily-net').innerText = "₱"+(dRev-dExp).toLocaleString();
-        document.getElementById('daily-rev').innerText = "₱"+dRev.toLocaleString();
+        // UPDATED: SHIFT NET = REVENUE ONLY (NO EXPENSE SUBTRACTION HERE)
+        document.getElementById('daily-net').innerText = "₱"+dRev.toLocaleString();
         
         const pd = document.getElementById('loyverse-display'); pd.innerText = "₱"+dPos.toLocaleString(); pd.style.color = (dRev >= dPos && dPos > 0) ? "#4ade80" : "#1e293b";
 
         const shiftLogs = db.logs.filter(l => l.isoDate === currentShiftDate && l.type !== 'POS_REF').slice(0, 20);
         const log = document.getElementById('log-list'); log.innerHTML = '';
-        if (shiftLogs.length === 0) { log.innerHTML = `<div style="text-align:center; padding:20px; color:#94a3b8; font-size:0.8rem;">No transactions this shift</div>`; }
+        if (shiftLogs.length === 0) { log.innerHTML = `<div style="text-align:center; padding:15px; color:#94a3b8; font-size:0.75rem;">No transactions this shift</div>`; }
         else {
             shiftLogs.forEach((l) => {
                 const val = parseFloat(l.amt || l.amount) || 0;
                 const typeChar = l.type ? l.type.trim().toUpperCase()[0] : "?";
-                log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:10px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff} | ${l.google_name || 'System'}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br></div></div>`;
+                log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:8px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff} | ${l.google_name || 'System'}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br></div></div>`;
             });
         }
         if(document.getElementById('report').classList.contains('active')) buildReport();
@@ -481,7 +479,19 @@
             notify("Syncing...", "⏳");
             let urls = [];
             for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) urls.push(url); } }
-            const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
+            const entry = { 
+                type: type.toUpperCase(), 
+                amt, 
+                chan, 
+                desc, 
+                staff: staffInput, 
+                auth_user: loggedInUser.email, 
+                google_name: loggedInUser.user_metadata.full_name, 
+                photos: urls, 
+                time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), 
+                date: pstNow.toLocaleDateString(), 
+                isoDate: getShiftDate(pstNow) 
+            };
             const { error } = await _supabase.from('transactions').insert([entry]);
             if (!error) { closeModal(); notify("Cloud Synced!", "✅"); clearForm(); }
             else { notify("Error Saving", "❌"); }
@@ -525,7 +535,7 @@
         
         // Start Fade Out & Slide Down Animation
         container.style.opacity = '0';
-        container.style.transform = 'translateY(20px)';
+        container.style.transform = 'translateY(15px)';
         
         setTimeout(() => {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
