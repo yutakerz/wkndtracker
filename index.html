@@ -36,7 +36,7 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- LIQUID GLASS CAPSULE NAV (iOS STYLE) --- */
+        /* --- LIQUID GLASS CAPSULE NAV --- */
         nav { 
             position: fixed; 
             bottom: 30px; 
@@ -44,12 +44,12 @@
             transform: translateX(-50%);
             width: auto;
             min-width: 300px;
-            background: rgba(255, 255, 255, 0.6); /* Darker glass for contrast */
-            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); /* Heavy liquid blur */
+            background: rgba(255, 255, 255, 0.6); 
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             display: flex; align-items: center; justify-content: center; 
             padding: 6px;
             z-index: 2000; 
-            border-radius: 100px; /* Full Capsule */
+            border-radius: 100px; 
             border: 1px solid rgba(255, 255, 255, 0.15); 
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); 
         }
@@ -63,7 +63,7 @@
             color: rgba(0, 0, 0, 0.6);
             text-align: center; 
             padding: 10px 20px; 
-            border-radius: 100px; /* Individual Capsules */
+            border-radius: 100px; 
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         
@@ -75,7 +75,7 @@
         }
 
         .container { 
-            padding: 10px; /* Reduced outer padding */
+            padding: 10px; 
             padding-top: calc(15px + env(safe-area-inset-top)); 
             padding-bottom: 100px; 
             max-width: 1400px; margin: 0 auto; 
@@ -106,10 +106,9 @@
         .view { display: none; }
         .view.active { display: block; }
         
-        .dashboard-grid { display: grid; grid-template-columns: 320px 1fr; gap: 10px; } /* Compact Gap */
+        .dashboard-grid { display: grid; grid-template-columns: 320px 1fr; gap: 10px; } 
         @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } }
         
-        /* COMPACT CARD STYLING */
         .card { background: white; padding: 12px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .dark-card { background: var(--dark-card); color: white; border: none; }
         h2 { margin-top: 0; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; margin-bottom: 8px; }
@@ -133,7 +132,8 @@
         .btn-success { background: var(--success); color: white; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-danger { background: #fee2e2; color: var(--danger); font-size: 0.75rem; width: auto; padding: 5px 10px; border-radius: 6px;}
-        
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
         .table-wrap { overflow-x: auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; margin-top: 15px; }
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
         th { background: #f8fafc; text-align: left; padding: 10px; font-size: 0.65rem; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #eee;}
@@ -142,8 +142,16 @@
         .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .filter-section { background: white; padding: 10px; border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; border: 1px solid #e2e8f0; flex-wrap: wrap; }
         
-        .cool-alert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: var(--dark-card); color: white; padding: 15px 30px; border-radius: 50px; z-index: 10000; transition: 0.5s; border: 2px solid var(--primary); display: flex; gap: 10px; }
-        .cool-alert.show { top: 20px; }
+        .cool-alert { 
+            position: fixed; 
+            top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: var(--dark-card); color: white; padding: 20px 40px; 
+            border-radius: 50px; z-index: 10000; transition: 0.4s; 
+            border: 2px solid var(--primary); display: flex; gap: 10px;
+            opacity: 0; visibility: hidden; pointer-events: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .cool-alert.show { opacity: 1; visibility: visible; }
         
         .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 4000; padding: 20px; }
         .modal-content { background: white; padding: 25px; border-radius: 24px; width: 100%; max-width: 380px; text-align: center; }
@@ -208,7 +216,7 @@
         <span onclick="switchView('daily', this)">Day</span>
         <span onclick="switchView('weekly', this)">Week</span>
         <span onclick="switchView('monthly', this)">Month</span>
-        <span onclick="logout()" style="color:var(--danger)">Exit</span>
+        <span onclick="logout()" style="color:var(--danger)">Logout</span>
     </div>
 </nav>
 
@@ -228,17 +236,16 @@
 
                 <div class="card">
                     <h2 style="color: #64748b;">Shift Net (8AM Reset)</h2>
-                    <div class="net-total" id="daily-net" style="color: var(--success); font-size: 1.6rem;">₱0.00</div>
-                    <div style="margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                        </div>
+                    <div class="net-total" id="daily-net" style="font-size: 1.6rem; color: var(--success);">₱0.00</div>
+                    <div style="margin-bottom: 6px; border-bottom: 1px solid #eee;"></div>
                     <div id="channel-stats-daily"></div>
                 </div>
 
                 <div class="card">
-                    <h2 style="color: #64748b;">Loyverse Total Profit</h2>
+                    <h2 style="color: #64748b;">Loyverse Daily Profit</h2>
                     <div id="loyverse-display" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; color: #1e293b;">₱0.00</div>
                     <input type="number" id="loyverse-input" placeholder="New Total" style="padding: 8px;">
-                    <button class="btn btn-primary" style="font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Confirm</button>
+                    <button class="btn btn-primary" id="btn-loyverse" style="font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Confirm</button>
                 </div>
             </div>
 
@@ -259,7 +266,7 @@
                             <div class="photo-slot" onclick="clickInput(3)" id="slot-3"></div>
                         </div>
                         <input type="file" id="photo-input" hidden accept="image/*" onchange="handlePhoto(this)">
-                        <button class="btn btn-success" onclick="confirmEntry('REVENUE')">Add Revenue</button>
+                        <button class="btn btn-success" id="btn-rev" onclick="confirmEntry('REVENUE')">Add Revenue</button>
                     </div>
                     <div class="card">
                         <h2 style="color: #64748b;">Daily Post Expense</h2>
@@ -269,7 +276,7 @@
                             <input type="text" id="exp-staff" placeholder="Put Your Name">
                             <select id="exp-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option></select>
                         </div>
-                        <button class="btn btn-primary" onclick="confirmEntry('EXPENSE')">Add Expense</button>
+                        <button class="btn btn-primary" id="btn-exp" onclick="confirmEntry('EXPENSE')">Add Expense</button>
                     </div>
                 </div>
                 <div class="card">
@@ -296,7 +303,7 @@
         
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead>
+                <thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Verified User</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead>
                 <tbody id="rep-table"></tbody>
             </table>
         </div>
@@ -381,7 +388,6 @@
                 const val = parseFloat(l.amt || l.amount) || 0;
                 const type = (l.type || "").trim().toUpperCase();
                 const chan = (l.chan || "").trim();
-                // HOME LOGIC: Overall Balance subtracts expenses
                 if (type === "REVENUE") { if (db.chans.hasOwnProperty(chan)) db.chans[chan] += val; }
                 else if (type === "EXPENSE") { if (db.chans.hasOwnProperty(chan)) db.chans[chan] -= val; }
             });
@@ -390,11 +396,17 @@
     }
 
     async function updateLoyverse() {
+        const btn = document.getElementById('btn-loyverse');
+        const oldTxt = btn.innerText;
+        btn.innerText = "Processing..."; btn.disabled = true;
+
         const amt = parseFloat(document.getElementById('loyverse-input').value);
-        if(!amt && amt !== 0) return notify("Enter amount", "⚠️");
+        if(!amt && amt !== 0) { btn.innerText = oldTxt; btn.disabled = false; return notify("Enter amount", "⚠️"); }
         const pstNow = await getPSTTime();
         const entry = { type: 'POS_REF', amt: amt, chan: 'System', desc: 'POS Reference Update', staff: 'System', auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
         const { error } = await _supabase.from('transactions').insert([entry]);
+        
+        btn.innerText = oldTxt; btn.disabled = false;
         if (!error) { document.getElementById('loyverse-input').value=''; notify("Target Updated!", "📈"); fetchCloudData(); }
         else { notify("Error Saving", "❌"); }
     }
@@ -402,6 +414,7 @@
     async function sync() {
         const pstNow = await getPSTTime();
         const currentShiftDate = getShiftDate(pstNow);
+
         let tr = 0, te = 0;
         db.logs.forEach(l => {
             const val = parseFloat(l.amt || l.amount) || 0;
@@ -434,12 +447,10 @@
         document.getElementById('total-net').innerText = "₱"+(tr - te).toLocaleString();
         document.getElementById('total-rev').innerText = "₱"+tr.toLocaleString();
         document.getElementById('total-exp').innerText = "₱"+te.toLocaleString();
-        // SHIFT NET = REVENUE ONLY
         document.getElementById('daily-net').innerText = "₱"+dRev.toLocaleString();
         
         const pd = document.getElementById('loyverse-display'); pd.innerText = "₱"+dPos.toLocaleString(); pd.style.color = (dRev >= dPos && dPos > 0) ? "#4ade80" : "#1e293b";
 
-        // RESTORED RECENT TRANSACTIONS FOR CURRENT SHIFT
         const shiftLogs = db.logs.filter(l => l.isoDate === currentShiftDate && l.type !== 'POS_REF').slice(0, 20);
         const log = document.getElementById('log-list'); log.innerHTML = '';
         if (shiftLogs.length === 0) { log.innerHTML = `<div style="text-align:center; padding:15px; color:#94a3b8; font-size:0.75rem;">No transactions this shift</div>`; }
@@ -447,7 +458,7 @@
             shiftLogs.forEach((l) => {
                 const val = parseFloat(l.amt || l.amount) || 0;
                 const typeChar = l.type ? l.type.trim().toUpperCase()[0] : "?";
-                log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:8px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff} | ${l.google_name || 'System'}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br></div></div>`;
+                log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:8px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.time} | ${l.staff} | User: ${l.google_name || 'System'}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br></div></div>`;
             });
         }
         if(document.getElementById('report').classList.contains('active')) buildReport();
@@ -479,11 +490,17 @@
 
         document.getElementById('modal').style.display = 'flex';
         document.getElementById('m-confirm').onclick = async () => {
+            const mConfirm = document.getElementById('m-confirm');
+            const oldTxt = mConfirm.innerText;
+            mConfirm.innerText = "Processing..."; mConfirm.disabled = true;
+
             notify("Syncing...", "⏳");
             let urls = [];
             for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) urls.push(url); } }
             const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
             const { error } = await _supabase.from('transactions').insert([entry]);
+            
+            mConfirm.innerText = oldTxt; mConfirm.disabled = false;
             if (!error) { closeModal(); notify("Cloud Synced!", "✅"); clearForm(); }
             else { notify("Error Saving", "❌"); }
         };
@@ -568,12 +585,14 @@
     function buildReport() {
         const table = document.getElementById('rep-table'); table.innerHTML = '';
         let tr = 0, te = 0, tPos = 0;
-        let sRev = 0;
+        let sRev = 0, sExp = 0; // Local variables for selected range
         const dVal = document.getElementById('filter-date').value;
         const dEnd = document.getElementById('filter-date-end').value;
         const mVal = document.getElementById('filter-month').value;
         
         let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
+        let expenseLabel = currentReportType === 'daily' ? "Period Expense Daily" : (currentReportType === 'weekly' ? "Period Expense Weekly" : "Period Expense Monthly");
+        
         let repChansOverall = { Cash:0, GCash:0, Maya:0, BPI:0 };
         let repChansShift = { Cash:0, GCash:0, Maya:0, BPI:0 };
 
@@ -583,41 +602,24 @@
             const c = (l.chan || "").trim();
             const logDate = l.isoDate;
 
-            // BOX 1 LOGIC (Period Balance)
             let addToBalance = false;
-            if(currentReportType === 'daily') {
-                // DAILY: Cumulative (Total from very first up to selected day)
-                addToBalance = (logDate <= dVal);
-            } else if(currentReportType === 'weekly') {
-                // WEEKLY: Strict Range (Disregard history outside range)
-                if(dVal && dEnd) addToBalance = (logDate >= dVal && logDate <= dEnd);
-            } else {
-                // MONTHLY: Strict Month
-                if(mVal) addToBalance = logDate.startsWith(mVal);
-            }
+            if(currentReportType === 'daily') { addToBalance = (logDate <= dVal); } 
+            else if(currentReportType === 'weekly') { if(dVal && dEnd) addToBalance = (logDate >= dVal && logDate <= dEnd); } 
+            else { if(mVal) addToBalance = logDate.startsWith(mVal); }
 
             if (addToBalance) {
-                if(t === "REVENUE") { 
-                    tr += val; 
-                    if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] += val; 
-                } 
-                else if (t === "EXPENSE") { 
-                    te += val; 
-                    if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val; 
-                } 
+                if(t === "REVENUE") { tr += val; if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] += val; } 
+                else if (t === "EXPENSE") { te += val; if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val; } 
             }
 
-            // BOX 2 & TABLE LOGIC (Strict Selected Period Only)
             let inRange = false;
             if (currentReportType === 'daily') { inRange = (logDate === dVal); }
             else if (currentReportType === 'weekly') { inRange = (logDate >= dVal && logDate <= dEnd); }
             else { inRange = logDate.startsWith(mVal); }
 
             if(inRange) {
-                if(t === "REVENUE") { 
-                    sRev += val;
-                    if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; 
-                }
+                if(t === "REVENUE") { sRev += val; if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; }
+                else if (t === "EXPENSE") { sExp += val; } // Tracks expenses for Box 2
                 else if (t === "POS_REF") { tPos += val; }
 
                 if(t !== 'POS_REF') {
@@ -628,7 +630,7 @@
                             if(p) photoHtml += `<img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;border:1px solid #ddd;cursor:pointer;" onclick="openLightbox(${photosJson}, ${idx})">`; 
                         });
                     }
-                    table.innerHTML += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${l.type}</b></td><td>${l.staff}</td><td>${l.desc}</td><td>${l.chan}</td><td>${t === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td><td>${t === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td><td>${photoHtml}</td></tr>`;
+                    table.innerHTML += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${l.type}</b></td><td>${l.staff}</td><td><small>${l.google_name || 'System'}</small></td><td>${l.desc}</td><td>${l.chan}</td><td>${t === "REVENUE" ? '₱'+val.toLocaleString() : '-'}</td><td>${t === "EXPENSE" ? '₱'+val.toLocaleString() : '-'}</td><td>${photoHtml}</td></tr>`;
                 }
             }
         });
@@ -648,10 +650,6 @@
                     <span>Exp: <b style="color:var(--danger)">₱${te.toLocaleString()}</b></span>
                 </div>
                 ${overallChanHtml}
-                <div style="margin-top:10px; border-top:1px solid #eee; padding-top:8px;">
-                    <h2 style="margin:0; font-size:0.6rem; color:#64748b;">${loyverseLabel}</h2>
-                    <div style="font-size:1.1rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div>
-                </div>
             </div>
             
             <div class="card">
@@ -659,7 +657,18 @@
                 <div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div>
                 <div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>
                 ${shiftChanHtml}
-            </div>`;
+            </div>
+
+            <div class="card">
+                <h2 style="color: #64748b;">${loyverseLabel}</h2>
+                <div style="font-size:1.6rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div>
+            </div>
+
+            <div class="card">
+                <h2 style="color: #64748b;">${expenseLabel}</h2>
+                <div style="font-size:1.6rem; font-weight:800; color:var(--danger);">₱${sExp.toLocaleString()}</div>
+            </div>
+        `;
     }
 
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
