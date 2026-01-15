@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WKNDTRACKER">
     <link rel="apple-touch-icon" href="logo.jpg">
+    <link rel="manifest" href="manifest.json">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -140,7 +141,7 @@
         #lightbox img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 10px; }
         .lightbox-close { position: absolute; top: calc(20px + env(safe-area-inset-top)); right: 20px; color: white; font-size: 2rem; cursor: pointer; }
         .lightbox-nav { position: absolute; bottom: 50px; display: flex; gap: 30px; width: 100%; justify-content: center; }
-        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px; border-radius: 50px; font-weight: 700; cursor: pointer; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; cursor: pointer; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -217,9 +218,7 @@
                 <div class="card">
                     <h2 style="color: #64748b;">Shift Net (8AM Reset)</h2>
                     <div class="net-total" id="daily-net" style="font-size: 1.8rem; color: var(--success);">₱0.00</div>
-                    <div style="display:flex; justify-content: space-between; font-size: 0.75rem; color:#64748b; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                        <span>Rev: <b id="daily-rev" style="color:var(--success)">₱0</b></span>
-                        <span>Exp: <b id="daily-exp" style="color:var(--danger)">₱0</b></span>
+                    <div style="margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
                     </div>
                     <div id="channel-stats-daily"></div>
                 </div>
@@ -238,7 +237,7 @@
                         <h2 style="color: #64748b;">Daily Post Sales</h2>
                         <div class="input-stack">
                             <input type="number" id="rev-amt" placeholder="Amount (₱) - Optional">
-                            <input type="text" id="rev-staff" placeholder="Admin Reference Name">
+                            <input type="text" id="rev-staff" placeholder="Put Your Name">
                             <select id="rev-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option><option>Others</option></select>
                         </div>
                         <label style="font-size: 0.65rem; color: #94a3b8; margin-bottom: 5px; display: block;">RECEIPT PHOTOS (MAX 4)</label>
@@ -255,8 +254,8 @@
                         <h2 style="color: #64748b;">Daily Post Expense</h2>
                         <div class="input-stack">
                             <input type="number" id="exp-amt" placeholder="Amount (₱)">
-                            <input type="text" id="exp-desc" placeholder="Details">
-                            <input type="text" id="exp-staff" placeholder="Admin Reference Name">
+                            <input type="text" id="exp-desc" placeholder="Details (e.g Grab, Oatmilk, etc.)">
+                            <input type="text" id="exp-staff" placeholder="Put Your Name">
                             <select id="exp-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option></select>
                         </div>
                         <button class="btn btn-primary" onclick="confirmEntry('EXPENSE')">Add Expense</button>
@@ -282,7 +281,7 @@
             <input type="month" id="filter-month" style="width: auto; margin-bottom: 0; display: none;" onchange="updateReportFilter()">
         </div>
         
-        <div id="rep-cards" style="margin-bottom:20px; max-width:400px;"></div>
+        <div id="rep-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-bottom:20px;"></div>
         
         <div class="table-wrap">
             <table>
@@ -324,7 +323,6 @@
     }
 
     function getShiftDate(dateObj) {
-        // Shift resets at 8AM. If hour < 8 (0-7), it belongs to previous day
         const hour = dateObj.getHours();
         const date = new Date(dateObj);
         if (hour < 8) { date.setDate(date.getDate() - 1); }
@@ -373,6 +371,7 @@
                 const type = (l.type || "").trim().toUpperCase();
                 const chan = (l.chan || "").trim();
                 if (type === "REVENUE") { if (db.chans.hasOwnProperty(chan)) db.chans[chan] += val; }
+                else if (type === "EXPENSE") { if (db.chans.hasOwnProperty(chan)) db.chans[chan] -= val; }
             });
             await sync();
         }
@@ -425,7 +424,6 @@
         document.getElementById('total-exp').innerText = "₱"+te.toLocaleString();
         document.getElementById('daily-net').innerText = "₱"+(dRev-dExp).toLocaleString();
         document.getElementById('daily-rev').innerText = "₱"+dRev.toLocaleString();
-        document.getElementById('daily-exp').innerText = "₱"+dExp.toLocaleString();
         
         const pd = document.getElementById('loyverse-display'); pd.innerText = "₱"+dPos.toLocaleString(); pd.style.color = (dRev >= dPos && dPos > 0) ? "#4ade80" : "#1e293b";
 
@@ -450,13 +448,17 @@
         let desc = type === 'REVENUE' ? "Daily Sales Inflow" : document.getElementById('exp-desc').value;
 
         if(type === 'EXPENSE' && !amtInput) return notify("Fill all fields!", "⚠️");
-        if(!staffInput) return notify("Admin Reference required!", "⚠️");
+        if(!staffInput) return notify("Name is required!", "⚠️");
         
         const pstNow = await getPSTTime();
-        const googleName = loggedInUser.user_metadata.full_name || "Unknown User";
 
         document.getElementById('m-title').innerText = "Confirm " + type;
-        document.getElementById('m-body').innerHTML = `<b>Amt:</b> ₱${amt.toLocaleString()}<br><b>Staff:</b> ${staffInput}<br><b>User:</b> ${googleName}`;
+        document.getElementById('m-body').innerHTML = `
+            <b>Amt:</b> ₱${amt.toLocaleString()}<br>
+            <b>Staff:</b> ${staffInput}<br>
+            <b>Channel:</b> ${chan}<br>
+            ${type === 'EXPENSE' ? `<b>Details:</b> ${desc}` : ''}
+        `;
         
         const imgContainer = document.getElementById('m-imgs');
         imgContainer.innerHTML = '';
@@ -467,7 +469,7 @@
             notify("Syncing...", "⏳");
             let urls = [];
             for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) urls.push(url); } }
-            const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: googleName, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
+            const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
             const { error } = await _supabase.from('transactions').insert([entry]);
             if (!error) { closeModal(); notify("Cloud Synced!", "✅"); clearForm(); }
             else { notify("Error Saving", "❌"); }
@@ -544,12 +546,14 @@
     function buildReport() {
         const table = document.getElementById('rep-table'); table.innerHTML = '';
         let tr = 0, te = 0, tPos = 0;
+        let sRev = 0;
         const dVal = document.getElementById('filter-date').value;
         const dEnd = document.getElementById('filter-date-end').value;
         const mVal = document.getElementById('filter-month').value;
         
         let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
-        let repChans = { Cash:0, GCash:0, Maya:0, BPI:0, Others:0 };
+        let repChansOverall = { Cash:0, GCash:0, Maya:0, BPI:0 };
+        let repChansShift = { Cash:0, GCash:0, Maya:0, BPI:0 };
 
         const filteredLogs = db.logs.filter(l => {
             if (currentReportType === 'weekly') { 
@@ -565,8 +569,17 @@
             const val = parseFloat(l.amt || l.amount) || 0;
             const t = (l.type || "").trim().toUpperCase();
             const c = (l.chan || "").trim();
-            if(t === "REVENUE") { tr += val; if(repChans.hasOwnProperty(c)) repChans[c] += val; } 
-            else if (t === "EXPENSE") { te += val; } 
+
+            if(t === "REVENUE") { 
+                tr += val; 
+                sRev += val;
+                if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] += val; 
+                if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; 
+            } 
+            else if (t === "EXPENSE") { 
+                te += val; 
+                if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
+            } 
             else if (t === "POS_REF") { tPos += val; }
             
             if(t !== 'POS_REF') {
@@ -581,11 +594,11 @@
             }
         });
 
-        let chanHtml = '';
-        for(let [k,v] of Object.entries(repChans)) { 
-            if(k === 'Others') continue;
-            chanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; 
-        }
+        let overallChanHtml = '';
+        for(let [k,v] of Object.entries(repChansOverall)) { overallChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
+
+        let shiftChanHtml = '';
+        for(let [k,v] of Object.entries(repChansShift)) { shiftChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
 
         document.getElementById('rep-cards').innerHTML = `
             <div class="card">
@@ -595,11 +608,19 @@
                     <span>Rev: <b style="color:var(--success)">₱${tr.toLocaleString()}</b></span>
                     <span>Exp: <b style="color:var(--danger)">₱${te.toLocaleString()}</b></span>
                 </div>
-                ${chanHtml}
+                ${overallChanHtml}
                 <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
                     <h2 style="margin:0; font-size:0.7rem; color:#64748b;">${loyverseLabel}</h2>
                     <div style="font-size:1.2rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div>
                 </div>
+            </div>
+            
+            <div class="card">
+                <h2 style="color: #64748b;">Shift Net (8AM Reset)</h2>
+                <div class="net-total" style="font-size: 1.8rem; color: var(--success);">₱${sRev.toLocaleString()}</div>
+                <div style="margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                </div>
+                ${shiftChanHtml}
             </div>`;
     }
 

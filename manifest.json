@@ -1,0 +1,22 @@
+{
+  "name": "WM Tracker",
+  "short_name": "WM.T",
+  "description": "Expense and Revenue Tracker",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#3e573d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
