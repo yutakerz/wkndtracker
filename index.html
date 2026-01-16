@@ -272,6 +272,16 @@
                     <button class="btn btn-primary" id="btn-loyverse" style="font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Confirm</button>
                 </div>
 
+
+                <div class="card">
+                    <h2 style="color: #64748b;">App Notifications</h2>
+                    <p style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 10px;">Enable to get alerts for new transactions.</p>
+                    <button class="btn btn-primary" onclick="requestNotificationPermission()" style="background: #3e573d;">
+                        🔔 Enable Notifications
+                    </button>
+                </div>
+
+
                 <div class="card">
                     <h2 style="color: #64748b;">Transfer Funds</h2>
                     <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 10px;">
@@ -360,12 +370,10 @@
     const S_KEY = "sb_publishable_VzAlTOn_of3qNk4KWcK77A_Gj1dyBU7";
     const _supabase = supabase.createClient(S_URL, S_KEY);
 
-        // Register the background service worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').then(() => {
-            console.log('Legit App Mode: Service Worker Registered');
-        });
-    }
+// Register the OneSignal Service Worker
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/OneSignalSDKWorker.js'); 
+}
 
     const KEY = "admin";
     let loggedInUser = null;
@@ -379,14 +387,21 @@
     let lbIndex = 0;
     let touchStartX = 0;
 
-    async function requestNotificationPermission() {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-        notify("Notifications Enabled!", "🔔");
-        // Here, you would usually send the device "token" to Supabase
-        // so you know which phone to send the message to.
-    } else {
-        notify("Notifications Denied", "🚫");
+async function requestNotificationPermission() {
+    try {
+        // Trigger the official iOS popup
+        const permission = await Notification.requestPermission();
+        
+        if (permission === 'granted') {
+            // Tell OneSignal to officially subscribe this device
+            await OneSignal.Notifications.requestPermission();
+            notify("Notifications Enabled!", "🔔");
+        } else {
+            notify("Permission Denied", "🚫");
+        }
+    } catch (err) {
+        console.error("Notification Error:", err);
+        notify("Setup Failed", "❌");
     }
 }
 
