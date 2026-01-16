@@ -360,8 +360,20 @@
     }
 
     async function loginWithGoogle() {
-        const { error } = await _supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
-        if (error) notify("Login Failed", "❌");
+        const { error } = await _supabase.auth.signInWithOAuth({ 
+            provider: 'google', 
+            options: { redirectTo: window.location.origin } 
+        });
+        
+        // If Supabase Method 1 blocks them, it returns an error here
+        if (error) {
+            // Check if the error is the one we raised in the SQL Trigger
+            if (error.message.includes("authorized")) {
+                notify("You are not authorized!", "🚫");
+            } else {
+                notify("Login Failed: " + error.message, "❌");
+            }
+        }
     }
 
     async function checkUser() {
