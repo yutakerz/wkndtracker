@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Sales Dashboard</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --danger: #dc2626;
+            --success: #16a34a;
+            --dark: #0f172a;
+            --bg: #f8fafc;
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #334155; }
+
+        /* Dashboard Layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Two columns for Landscape */
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Responsive: Stack on mobile (Portrait) */
+        @media (max-width: 850px) {
+            .dashboard { grid-template-columns: 1fr; }
+            body { padding: 10px; }
+        }
+
+        .card { background: white; padding: 20px; border-radius: 12px; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; height: fit-content; }
+        h2 { margin-top: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+
+        /* Form Styling */
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .full-width { grid-column: span 2; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; color: #64748b; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; transition: border 0.2s; }
+        input:focus { outline: none; border-color: var(--primary); background: #f0f7ff; }
+
+        /* Summary Section */
+        .summary-card { background: var(--dark); color: white; margin-top: 20px; }
+        .summary-item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1rem; }
+        .net-total { font-size: 1.8rem; font-weight: 800; color: #4ade80; border-top: 1px solid #334155; pt: 10px; margin-top: 10px; }
+
+        /* Expense List */
+        .expense-list-container { max-height: 400px; overflow-y: auto; }
+        .expense-item { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px; border-bottom: 1px solid #f1f5f9;
+            animation: fadeIn 0.3s ease;
+        }
+        .expense-item:last-child { border-bottom: none; }
+        
+        /* Buttons */
+        .btn { border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.3s; width: 100%; }
+        .btn-primary { background: var(--primary); color: white; margin-top: 10px; }
+        .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
+        .btn-admin { background: #f1f5f9; color: var(--danger); width: auto; padding: 6px 12px; font-size: 0.75rem; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+    </style>
+</head>
+<body>
+
+<header style="text-align: center; margin-bottom: 30px;">
+    <h1 style="margin: 0; color: var(--dark);">Store Sales Tracker</h1>
+    <p id="current-date" style="color: #64748b; margin: 5px 0; font-weight: 500;"></p>
+</header>
+
+<div class="dashboard">
+    
+    <div class="left-col">
+        <div class="card">
+            <h2>💰 Manual Cash Count</h2>
+            <div class="input-grid">
+                <div><label>Cash</label><input type="number" id="in-cash" placeholder="0" oninput="calculate()"></div>
+                <div><label>GCash</label><input type="number" id="in-gcash" placeholder="0" oninput="calculate()"></div>
+                <div><label>Maya</label><input type="number" id="in-maya" placeholder="0" oninput="calculate()"></div>
+                <div><label>BPI</label><input type="number" id="in-bpi" placeholder="0" oninput="calculate()"></div>
+                <div class="full-width">
+                    <label style="color: var(--primary);">Loyverse Daily Sales (Reference)</label>
+                    <input type="number" id="in-loyverse" placeholder="Enter Loyverse Total" oninput="calculate()">
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2>💸 New Expense</h2>
+            <div class="input-grid">
+                <div class="full-width"><label>Name</label><input type="text" id="exp-name" placeholder="Who spent? (e.g. Taka)"></div>
+                <div class="full-width"><label>Description</label><input type="text" id="exp-desc" placeholder="What was bought?"></div>
+                <div><label>Amount (₱)</label><input type="number" id="exp-amt" placeholder="0.00"></div>
+                <div>
+                    <label>Method</label>
+                    <select id="exp-method">
+                        <option value="Cash">Cash</option>
+                        <option value="GCash">GCash</option>
+                        <option value="Maya">Maya</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="showConfirmation()">Confirm Expense</button>
+        </div>
+    </div>
+
+    <div class="right-col">
+        <div class="card summary-card">
+            <h2>📊 Financial Summary</h2>
+            <div class="summary-item"><span>Total Collected:</span> <span id="sum-revenue">₱0.00</span></div>
+            <div class="summary-item"><span>Total Expenses:</span> <span id="sum-expenses">₱0.00</span></div>
+            <div class="net-total">
+                <div style="font-size: 0.8rem; opacity: 0.8; font-weight: normal;">NET PROFIT</div>
+                <span id="sum-net">₱0.00</span>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2>📜 Expense Log</h2>
+            <div id="expense-list" class="expense-list-container">
+                </div>
+        </div>
+
+        <button onclick="clearDay()" class="btn" style="background:none; color:#94a3b8; font-size: 0.8rem; margin-top: 20px;">Reset Everything for New Day</button>
+    </div>
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <h2 style="justify-content: center; color: var(--primary);">Confirm Transaction</h2>
+        <div id="modal-body" style="margin: 20px 0; text-align: left; background: #f8fafc; padding: 15px; border-radius: 8px;"></div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn" style="background:#e2e8f0;" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveExpense()">Save Records</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const PWD = "admin"; // Admin Password
+    let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+
+    // Set Date
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Load saved sales
+    ['cash', 'gcash', 'maya', 'bpi', 'loyverse'].forEach(field => {
+        document.getElementById(`in-${field}`).value = localStorage.getItem(`save_${field}`) || '';
+    });
+
+    function calculate() {
+        const cash = parseFloat(document.getElementById('in-cash').value) || 0;
+        const gcash = parseFloat(document.getElementById('in-gcash').value) || 0;
+        const maya = parseFloat(document.getElementById('in-maya').value) || 0;
+        const bpi = parseFloat(document.getElementById('in-bpi').value) || 0;
+        const totalRevenue = cash + gcash + maya + bpi;
+
+        // Save progress
+        localStorage.setItem('save_cash', cash);
+        localStorage.setItem('save_gcash', gcash);
+        localStorage.setItem('save_maya', maya);
+        localStorage.setItem('save_bpi', bpi);
+        localStorage.setItem('save_loyverse', document.getElementById('in-loyverse').value);
+
+        const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+        const net = totalRevenue - totalExpenses;
+
+        document.getElementById('sum-revenue').innerText = "₱" + totalRevenue.toLocaleString();
+        document.getElementById('sum-expenses').innerText = "₱" + totalExpenses.toLocaleString();
+        document.getElementById('sum-net').innerText = "₱" + net.toLocaleString();
+        
+        renderList();
+    }
+
+    function showConfirmation() {
+        const name = document.getElementById('exp-name').value;
+        const desc = document.getElementById('exp-desc').value;
+        const amt = document.getElementById('exp-amt').value;
+        const method = document.getElementById('exp-method').value;
+
+        if(!name || !desc || !amt) return alert("Please fill all fields");
+
+        document.getElementById('modal-body').innerHTML = `
+            <b>Payer:</b> ${name}<br>
+            <b>Item:</b> ${desc}<br>
+            <b>Amount:</b> ₱${parseFloat(amt).toLocaleString()}<br>
+            <b>Method:</b> ${method}
+        `;
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    function saveExpense() {
+        const item = {
+            id: Date.now(),
+            name: document.getElementById('exp-name').value,
+            desc: document.getElementById('exp-desc').value,
+            amount: parseFloat(document.getElementById('exp-amt').value),
+            method: document.getElementById('exp-method').value
+        };
+        expenses.push(item);
+        localStorage.setItem('expenses', JSON.stringify(expenses));
+        
+        // Reset inputs
+        document.getElementById('exp-name').value = '';
+        document.getElementById('exp-desc').value = '';
+        document.getElementById('exp-amt').value = '';
+        
+        closeModal();
+        calculate();
+    }
+
+    function renderList() {
+        const list = document.getElementById('expense-list');
+        list.innerHTML = expenses.length === 0 ? '<p style="color:#94a3b8; text-align:center;">No expenses recorded today</p>' : '';
+        
+        expenses.forEach((e, idx) => {
+            list.innerHTML += `
+                <div class="expense-item">
+                    <div>
+                        <div style="font-weight:700;">${e.desc}</div>
+                        <div style="font-size:0.75rem; color:#64748b;">By ${e.name} • via ${e.method}</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-weight:700; color:var(--danger)">-₱${e.amount.toLocaleString()}</div>
+                        <button class="btn-admin" onclick="deleteItem(${idx})">Edit/Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function deleteItem(idx) {
+        const p = prompt("Enter Admin Password:");
+        if(p === PWD) {
+            expenses.splice(idx, 1);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            calculate();
+        } else if(p) alert("Wrong Password");
+    }
+
+    function clearDay() {
+        const p = prompt("Type 'admin' to clear all data for a new day:");
+        if(p === PWD) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    calculate(); // Initial Run
+</script>
+
+</body>
+</html>

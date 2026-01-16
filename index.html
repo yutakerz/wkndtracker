@@ -11,6 +11,15 @@
     <link rel="apple-touch-icon" href="logo.jpg">
     <link rel="manifest" href="manifest.json">
 
+        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+        appId: "ba0d22f1-127b-468c-9647-877e80574443",
+        });
+    });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
@@ -351,6 +360,13 @@
     const S_KEY = "sb_publishable_VzAlTOn_of3qNk4KWcK77A_Gj1dyBU7";
     const _supabase = supabase.createClient(S_URL, S_KEY);
 
+        // Register the background service worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(() => {
+            console.log('Legit App Mode: Service Worker Registered');
+        });
+    }
+
     const KEY = "admin";
     let loggedInUser = null;
     let db = { chans: {Cash:0, GCash:0, Maya:0, BPI:0, Others:0}, logs: [], pos: localStorage.getItem('wknd_pos') || 0 };
@@ -362,6 +378,17 @@
     let lbPhotos = [];
     let lbIndex = 0;
     let touchStartX = 0;
+
+    async function requestNotificationPermission() {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+        notify("Notifications Enabled!", "🔔");
+        // Here, you would usually send the device "token" to Supabase
+        // so you know which phone to send the message to.
+    } else {
+        notify("Notifications Denied", "🚫");
+    }
+}
 
     async function getPSTTime() {
         try {
