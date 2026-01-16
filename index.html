@@ -370,9 +370,31 @@
     const S_KEY = "sb_publishable_VzAlTOn_of3qNk4KWcK77A_Gj1dyBU7";
     const _supabase = supabase.createClient(S_URL, S_KEY);
 
-// Register the OneSignal Service Worker
+// 1. REGISTER CORRECT ONESIGNAL WORKER
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/OneSignalSDKWorker.js'); 
+    navigator.serviceWorker.register('/OneSignalSDKWorker.js')
+    .then(() => console.log('Legit App: Worker Active'))
+    .catch(err => console.error('Worker Error:', err));
+}
+
+// 2. INITIALIZE & CHECK STATUS
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+        appId: "ba0d22f1-127b-468c-9647-877e80574443",
+    });
+
+    // Check if user is already subscribed
+    const isSubscribed = await OneSignal.Notifications.permission;
+    console.log("Notification Permission:", isSubscribed);
+});
+
+// 3. THE "ALLOW" BUTTON FUNCTION
+async function requestNotificationPermission() {
+    OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.Notifications.requestPermission();
+        notify("Permission Requested!", "🔔");
+    });
 }
 
     const KEY = "admin";
