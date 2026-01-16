@@ -45,7 +45,7 @@
             width: auto;
             min-width: 300px;
             background: rgba(255, 255, 255, 0.6); 
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
             display: flex; align-items: center; justify-content: center; 
             padding: 6px;
             z-index: 2000; 
@@ -158,7 +158,20 @@
         
         #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
         #lightbox img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 10px; }
-        .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; }
+        
+        /* UPDATED LIGHTBOX X POSITION FOR DYNAMIC ISLAND */
+        .lightbox-close { 
+            position: absolute; 
+            top: calc(40px + env(safe-area-inset-top)); /* Lowered to 40px extra offset */
+            right: 25px; 
+            color: white; 
+            font-size: 2.5rem; 
+            cursor: pointer; 
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 5001;
+            padding: 10px; /* Bigger hit area */
+        }
+        
         .lightbox-nav { position: absolute; bottom: 50px; display: flex; gap: 30px; width: 100%; justify-content: center; }
         .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 700; cursor: pointer; }
 
@@ -271,7 +284,7 @@
                         <div class="input-stack">
                             <input type="number" id="rev-amt" placeholder="Amount (₱) - Optional">
                             <input type="text" id="rev-staff" placeholder="Put Your Name">
-                            <select id="rev-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option><option>Others</option></select>
+                            <select id="rev-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option></select>
                         </div>
                         <label style="font-size: 0.6rem; color: #94a3b8; margin-bottom: 5px; display: block;">RECEIPT PHOTOS (MAX 4)</label>
                         <div class="photo-grid">
@@ -344,7 +357,7 @@
     let currentReportType = 'weekly';
     let tempPhotos = [];
     let currentSlot = 0;
-    let currentTypeContext = 'REVENUE'; // TRACKS IF PHOTO IS FOR SALES OR EXPENSE
+    let currentTypeContext = 'REVENUE';
     
     let lbPhotos = [];
     let lbIndex = 0;
@@ -370,7 +383,10 @@
     }
 
     async function loginWithGoogle() {
-        const { error } = await _supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+        const { error } = await _supabase.auth.signInWithOAuth({ 
+            provider: 'google', 
+            options: { redirectTo: window.location.origin } 
+        });
         if (error) {
             if (error.message.includes("authorized")) notify("You are not authorized!", "🚫");
             else notify("Login Failed: " + error.message, "❌");
@@ -575,12 +591,7 @@
         }, 300);
     }
 
-    function clickInput(slot, type) { 
-        currentSlot = slot; 
-        currentTypeContext = type; 
-        document.getElementById('photo-input').click(); 
-    }
-
+    function clickInput(slot, type) { currentSlot = slot; currentTypeContext = type; document.getElementById('photo-input').click(); }
     function handlePhoto(input) {
         if(!input.files[0]) return;
         const reader = new FileReader();
