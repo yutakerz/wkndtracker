@@ -171,6 +171,7 @@
         #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
         #lightbox img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 10px; }
         
+        /* UPDATED: LOWERED X POSITION FOR DYNAMIC ISLAND CLEARANCE */
         .lightbox-close { 
             position: absolute; 
             top: calc(70px + env(safe-area-inset-top)); 
@@ -180,7 +181,7 @@
             cursor: pointer; 
             text-shadow: 0 0 10px rgba(0,0,0,0.5);
             z-index: 5001;
-            padding: 15px;
+            padding: 15px; /* Larger tap target */
         }
         
         .lightbox-nav { position: absolute; bottom: 50px; display: flex; gap: 30px; width: 100%; justify-content: center; }
@@ -466,8 +467,7 @@
 
     async function fetchCloudData() {
         const { data, error } = await _supabase.from('transactions').select('*').order('id', { ascending: false });
-        document.getElementById('splash').style.display = 'none';
-
+        // SPLASH SCREEN REMOVED AFTER DATA IS FETCHED AND SYNCED
         if (!error && data) {
             db.logs = data;
             db.chans = { Cash: 0, GCash: 0, Maya: 0, BPI: 0, Others: 0 };
@@ -486,6 +486,9 @@
                 }
             });
             await sync();
+            document.getElementById('splash').style.display = 'none';
+        } else {
+            document.getElementById('splash').style.display = 'none';
         }
     }
 
@@ -500,7 +503,7 @@
         btn.innerText = oldTxt; btn.disabled = false;
         if (!error) { 
             document.getElementById('loyverse-input').value=''; 
-            notify("Saved!", "✅"); 
+            notify("Saved!"); 
             fetchCloudData(); 
         }
         else notify("Error Saving", "❌");
@@ -545,13 +548,17 @@
         
         const pd = document.getElementById('loyverse-display'); pd.innerText = "₱"+dPos.toLocaleString(); pd.style.color = (dRev >= dPos && dPos > 0) ? "#4ade80" : "#1e293b";
 
-        const shiftLogs = db.logs.filter(l => l.isoDate === currentShiftDate && l.type !== 'POS_REF');
+        // UPDATED: LOYVERSE (POS_REF) ADDED TO LIST WITH 'L' MARK
+        const shiftLogs = db.logs.filter(l => l.isoDate === currentShiftDate);
         const log = document.getElementById('log-list'); log.innerHTML = '';
         if (shiftLogs.length === 0) { log.innerHTML = `<div style="text-align:center; padding:15px; color:#94a3b8; font-size:0.75rem;">No transactions this shift</div>`; }
         else {
             shiftLogs.forEach((l) => {
                 const val = parseFloat(l.amt || l.amount) || 0;
-                const typeChar = l.type ? l.type.trim().toUpperCase()[0] : "?";
+                const typeRaw = (l.type || "").trim().toUpperCase();
+                let typeChar = typeRaw[0] || "?";
+                if (typeRaw === "POS_REF") typeChar = "L"; // L mark for Loyverse
+                
                 log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:8px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.isoDate} | ${l.time} | ${l.staff} | User: ${l.google_name || 'System'}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br></div></div>`;
             });
         }
@@ -576,7 +583,7 @@
             mConfirm.innerText = oldTxt; mConfirm.disabled = false;
             if (!error) { 
                 closeModal(); 
-                notify("Saved!", "✅"); 
+                notify("Saved!"); 
                 document.getElementById('tf-amt').value=''; 
                 fetchCloudData(); 
             }
@@ -595,10 +602,8 @@
         const pstNow = await getPSTTime();
         document.getElementById('m-title').innerText = "Confirm " + type;
         document.getElementById('m-body').innerHTML = `<b>Amt:</b> ₱${amt.toLocaleString()}<br><b>Staff:</b> ${staffInput}<br><b>Channel:</b> ${chan}<br>${type === 'EXPENSE' ? `<b>Details:</b> ${desc}` : ''}`;
-        
         const imgContainer = document.getElementById('m-imgs'); imgContainer.innerHTML = '';
         tempPhotos.forEach(p => { if(p) imgContainer.innerHTML += `<img src="${p}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">`; });
-        
         document.getElementById('modal').style.display = 'flex';
         document.getElementById('m-confirm').onclick = async () => {
             const mConfirm = document.getElementById('m-confirm');
@@ -610,7 +615,7 @@
             mConfirm.innerText = oldTxt; mConfirm.disabled = false;
             if (!error) { 
                 closeModal(); 
-                notify("Saved!", "✅"); 
+                notify("Saved!"); 
                 clearForm(); 
                 fetchCloudData(); 
             }
