@@ -505,7 +505,7 @@
         btn.innerText = oldTxt; btn.disabled = false;
         if (!error) { 
             document.getElementById('loyverse-input').value=''; 
-            notify(`${loggedInUser.user_metadata.full_name} updated the Loyverse Daily Profit to ₱${amt.toLocaleString()}`, "📈"); 
+            notify("Saved!"); 
             fetchCloudData(); 
         }
         else notify("Error Saving", "❌");
@@ -581,7 +581,7 @@
             mConfirm.innerText = oldTxt; mConfirm.disabled = false;
             if (!error) { 
                 closeModal(); 
-                notify(`${loggedInUser.user_metadata.full_name} transferred ₱${amt.toLocaleString()} from ${from} to ${to}`, "✅"); 
+                notify("Success!"); 
                 document.getElementById('tf-amt').value=''; 
                 fetchCloudData(); 
             }
@@ -615,7 +615,7 @@
                 closeModal(); 
                 let msg = "";
                 if(type === 'REVENUE') msg = amt > 0 ? `${loggedInUser.user_metadata.full_name} added ₱${amt.toLocaleString()} from ${chan}` : `${loggedInUser.user_metadata.full_name} added screenshots`;
-                else msg = `${loggedInUser.user_metadata.full_name} spent ₱${amt.toLocaleString()} for ${desc}`;
+                else msg = `Saved!`;
                 notify(msg, "✅"); 
                 clearForm(); 
                 fetchCloudData(); 
