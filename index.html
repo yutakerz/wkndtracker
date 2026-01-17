@@ -19,9 +19,6 @@
             await OneSignal.init({
                 appId: "ba0d22f1-127b-468c-9647-877e80574443",
             });
-            
-            // Register the worker through OneSignal's built-in helper
-            // This is more reliable for iOS than manual registration
             console.log("OneSignal Initialized");
         });
     </script>
@@ -60,7 +57,7 @@
             width: auto;
             min-width: 300px;
             background: rgba(255, 255, 255, 0.6); 
-            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(20px);
             display: flex; align-items: center; justify-content: center; 
             padding: 6px;
             z-index: 2000; 
@@ -174,17 +171,17 @@
         #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
         #lightbox img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 10px; }
         
-        /* UPDATED LIGHTBOX X POSITION FOR DYNAMIC ISLAND */
+        /* UPDATED: LOWERED X POSITION FOR DYNAMIC ISLAND CLEARANCE */
         .lightbox-close { 
             position: absolute; 
-            top: calc(40px + env(safe-area-inset-top)); 
+            top: calc(70px + env(safe-area-inset-top)); 
             right: 25px; 
             color: white; 
             font-size: 2.5rem; 
             cursor: pointer; 
             text-shadow: 0 0 10px rgba(0,0,0,0.5);
             z-index: 5001;
-            padding: 10px;
+            padding: 15px; /* Larger tap target */
         }
         
         .lightbox-nav { position: absolute; bottom: 50px; display: flex; gap: 30px; width: 100%; justify-content: center; }
@@ -278,8 +275,6 @@
                     <button class="btn btn-primary" id="btn-loyverse" style="font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Confirm</button>
                 </div>
 
-
-
                 <div class="card">
                     <h2 style="color: #64748b;">Transfer Funds</h2>
                     <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 10px;">
@@ -301,7 +296,7 @@
                         <div class="input-stack">
                             <input type="number" id="rev-amt" placeholder="Amount (₱) - Optional">
                             <input type="text" id="rev-staff" placeholder="Put Your Name">
-                            <select id="rev-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option></select>
+                            <select id="rev-channel"><option>Cash</option><option>GCash</option><option>Maya</option><option>BPI</option><option>Others</option></select>
                         </div>
                         <label style="font-size: 0.6rem; color: #94a3b8; margin-bottom: 5px; display: block;">RECEIPT PHOTOS (MAX 4)</label>
                         <div class="photo-grid">
@@ -336,7 +331,7 @@
                     <div id="log-list" style="max-height:400px; overflow-y:auto;"></div>
                 </div>
 
-                                <div class="card" style="background: #f8fafc; border: 1px solid var(--primary);">
+                <div class="card" style="background: #f8fafc; border: 1px solid var(--primary);">
                     <h2 style="color: var(--primary);">App Notifications</h2>
                     <p style="font-size: 0.7rem; color: #64748b; margin-bottom: 10px;">Enable alerts for new sales and expenses.</p>
                     <button class="btn btn-primary" onclick="requestNotificationPermission()">
@@ -376,14 +371,12 @@
     const S_KEY = "sb_publishable_VzAlTOn_of3qNk4KWcK77A_Gj1dyBU7";
     const _supabase = supabase.createClient(S_URL, S_KEY);
 
-    // OneSignal Worker Registration
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/OneSignalSDKWorker.js')
         .then(() => console.log('PWA: Notification Worker Active'))
         .catch(err => console.error('Worker Error:', err));
     }
 
-    // Permission Logic for iOS PWA
     async function requestNotificationPermission() {
         try {
             const permission = await Notification.requestPermission();
@@ -447,6 +440,14 @@
         const { data: { user } } = await _supabase.auth.getUser();
         if (user) {
             loggedInUser = user;
+
+            // --- ADD THESE TWO LINES FOR NOTIFICATION FILTERING ---
+            window.OneSignalDeferred = window.OneSignalDeferred || [];
+            OneSignalDeferred.push(function(OneSignal) {
+                OneSignal.User.addTag("email", user.email);
+            });
+            // -------------------------------------------------------
+
             document.getElementById('login-page').style.display = 'none';
             document.getElementById('main-nav').style.display = 'flex';
             document.getElementById('app-content').style.display = 'block';
@@ -502,7 +503,11 @@
         const entry = { type: 'POS_REF', amt, chan: 'System', desc: 'POS Reference Update', staff: 'System', auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
         const { error } = await _supabase.from('transactions').insert([entry]);
         btn.innerText = oldTxt; btn.disabled = false;
-        if (!error) { document.getElementById('loyverse-input').value=''; notify("Target Updated!", "📈"); fetchCloudData(); }
+        if (!error) { 
+            document.getElementById('loyverse-input').value=''; 
+            notify(`${loggedInUser.user_metadata.full_name} updated the Loyverse Daily Profit to ₱${amt.toLocaleString()}`, "📈"); 
+            fetchCloudData(); 
+        }
         else notify("Error Saving", "❌");
     }
 
@@ -574,7 +579,12 @@
             const entry = { type: 'TRANSFER', amt, chan: from, desc: `Transfer from ${from} to ${to}`, staff: 'System', auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
             const { error } = await _supabase.from('transactions').insert([entry]);
             mConfirm.innerText = oldTxt; mConfirm.disabled = false;
-            if (!error) { closeModal(); notify("Transfer Complete!", "✅"); document.getElementById('tf-amt').value=''; fetchCloudData(); }
+            if (!error) { 
+                closeModal(); 
+                notify(`${loggedInUser.user_metadata.full_name} transferred ₱${amt.toLocaleString()} from ${from} to ${to}`, "✅"); 
+                document.getElementById('tf-amt').value=''; 
+                fetchCloudData(); 
+            }
             else notify("Error Saving", "❌");
         };
     }
@@ -590,10 +600,8 @@
         const pstNow = await getPSTTime();
         document.getElementById('m-title').innerText = "Confirm " + type;
         document.getElementById('m-body').innerHTML = `<b>Amt:</b> ₱${amt.toLocaleString()}<br><b>Staff:</b> ${staffInput}<br><b>Channel:</b> ${chan}<br>${type === 'EXPENSE' ? `<b>Details:</b> ${desc}` : ''}`;
-        
         const imgContainer = document.getElementById('m-imgs'); imgContainer.innerHTML = '';
         tempPhotos.forEach(p => { if(p) imgContainer.innerHTML += `<img src="${p}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">`; });
-        
         document.getElementById('modal').style.display = 'flex';
         document.getElementById('m-confirm').onclick = async () => {
             const mConfirm = document.getElementById('m-confirm');
@@ -603,7 +611,15 @@
             const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
             const { error } = await _supabase.from('transactions').insert([entry]);
             mConfirm.innerText = oldTxt; mConfirm.disabled = false;
-            if (!error) { closeModal(); notify("Cloud Synced!", "✅"); clearForm(); fetchCloudData(); }
+            if (!error) { 
+                closeModal(); 
+                let msg = "";
+                if(type === 'REVENUE') msg = amt > 0 ? `${loggedInUser.user_metadata.full_name} added ₱${amt.toLocaleString()} from ${chan}` : `${loggedInUser.user_metadata.full_name} added screenshots`;
+                else msg = `${loggedInUser.user_metadata.full_name} spent ₱${amt.toLocaleString()} for ${desc}`;
+                notify(msg, "✅"); 
+                clearForm(); 
+                fetchCloudData(); 
+            }
             else notify("Error Saving", "❌");
         };
     }
