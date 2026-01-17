@@ -10,8 +10,7 @@
     <meta name="apple-mobile-web-app-title" content="WKNDTRACKER">
     <link rel="apple-touch-icon" href="logo.jpg">
     <link rel="manifest" href="manifest.json">
-
-    <script src="https://unpkg.com/pulltorefreshjs"></script>
+    
 
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -401,17 +400,6 @@
             notify("Setup Failed", "❌");
         }
     }
-
-    const ptr = PullToRefresh.init({
-        mainElement: 'body', // The element you want to pull
-        onRefresh() {
-            // This runs when you pull down
-            return fetchAndDisplayTransactions(); 
-        },
-        distThreshold: 60, // How far you have to pull
-        instructionsPullToRefresh: 'Pull down to refresh data',
-        instructionsReleaseToRefresh: 'Release to sync with cloud'
-        });
 
     const KEY = "admin";
     let loggedInUser = null;
