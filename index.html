@@ -171,7 +171,6 @@
         #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
         #lightbox img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 10px; }
         
-        /* UPDATED: LOWERED X POSITION FOR DYNAMIC ISLAND CLEARANCE */
         .lightbox-close { 
             position: absolute; 
             top: calc(70px + env(safe-area-inset-top)); 
@@ -181,7 +180,7 @@
             cursor: pointer; 
             text-shadow: 0 0 10px rgba(0,0,0,0.5);
             z-index: 5001;
-            padding: 15px; /* Larger tap target */
+            padding: 15px;
         }
         
         .lightbox-nav { position: absolute; bottom: 50px; display: flex; gap: 30px; width: 100%; justify-content: center; }
@@ -440,14 +439,10 @@
         const { data: { user } } = await _supabase.auth.getUser();
         if (user) {
             loggedInUser = user;
-
-            // --- ADD THESE TWO LINES FOR NOTIFICATION FILTERING ---
             window.OneSignalDeferred = window.OneSignalDeferred || [];
             OneSignalDeferred.push(function(OneSignal) {
                 OneSignal.User.addTag("email", user.email);
             });
-            // -------------------------------------------------------
-
             document.getElementById('login-page').style.display = 'none';
             document.getElementById('main-nav').style.display = 'flex';
             document.getElementById('app-content').style.display = 'block';
@@ -505,7 +500,7 @@
         btn.innerText = oldTxt; btn.disabled = false;
         if (!error) { 
             document.getElementById('loyverse-input').value=''; 
-            notify("Saved!"); 
+            notify("Saved!", "✅"); 
             fetchCloudData(); 
         }
         else notify("Error Saving", "❌");
@@ -581,7 +576,7 @@
             mConfirm.innerText = oldTxt; mConfirm.disabled = false;
             if (!error) { 
                 closeModal(); 
-                notify("Success!"); 
+                notify("Saved!", "✅"); 
                 document.getElementById('tf-amt').value=''; 
                 fetchCloudData(); 
             }
@@ -600,8 +595,10 @@
         const pstNow = await getPSTTime();
         document.getElementById('m-title').innerText = "Confirm " + type;
         document.getElementById('m-body').innerHTML = `<b>Amt:</b> ₱${amt.toLocaleString()}<br><b>Staff:</b> ${staffInput}<br><b>Channel:</b> ${chan}<br>${type === 'EXPENSE' ? `<b>Details:</b> ${desc}` : ''}`;
+        
         const imgContainer = document.getElementById('m-imgs'); imgContainer.innerHTML = '';
         tempPhotos.forEach(p => { if(p) imgContainer.innerHTML += `<img src="${p}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">`; });
+        
         document.getElementById('modal').style.display = 'flex';
         document.getElementById('m-confirm').onclick = async () => {
             const mConfirm = document.getElementById('m-confirm');
@@ -613,10 +610,7 @@
             mConfirm.innerText = oldTxt; mConfirm.disabled = false;
             if (!error) { 
                 closeModal(); 
-                let msg = "";
-                if(type === 'REVENUE') msg = amt > 0 ? `${loggedInUser.user_metadata.full_name} added ₱${amt.toLocaleString()} from ${chan}` : `${loggedInUser.user_metadata.full_name} added screenshots`;
-                else msg = `Saved!`;
-                notify(msg, "✅"); 
+                notify("Saved!", "✅"); 
                 clearForm(); 
                 fetchCloudData(); 
             }
@@ -702,8 +696,8 @@
                 else if (t === "EXPENSE") { te += val; if(repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val; }
                 else if (t === "TRANSFER") {
                     const toChan = l.desc.split(' to ')[1];
-                    if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
-                    if (repChansOverall.hasOwnProperty(toChan)) repChansOverall[toChan] += val;
+                    if (db.chans.hasOwnProperty(chan)) db.chans[chan] -= val;
+                    if (db.chans.hasOwnProperty(toChan)) db.chans[toChan] += val;
                 }
             }
             let inRange = currentReportType === 'daily' ? (logDate === dVal) : (currentReportType === 'weekly' ? (logDate >= dVal && logDate <= dEnd) : (logDate.startsWith(mVal)));
@@ -754,11 +748,13 @@
         document.getElementById('rev-staff').value=''; document.getElementById('exp-staff').value=''; 
         tempPhotos = []; 
         for(let i=0; i<4; i++) { 
-            document.getElementById(`rev-slot-${i}`).innerHTML = ''; document.getElementById(`rev-slot-${i}`).classList.remove('has-img'); 
-            document.getElementById(`exp-slot-${i}`).innerHTML = ''; document.getElementById(`exp-slot-${i}`).classList.remove('has-img'); 
+            const revSlot = document.getElementById(`rev-slot-${i}`);
+            const expSlot = document.getElementById(`exp-slot-${i}`);
+            if(revSlot) { revSlot.innerHTML = ''; revSlot.classList.remove('has-img'); }
+            if(expSlot) { expSlot.innerHTML = ''; expSlot.classList.remove('has-img'); }
         } 
     }
-    function notify(m, i) { const a = document.getElementById('cool-alert'); document.getElementById('alert-icon').innerText = i; document.getElementById('alert-msg').innerText = m; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'), 3000); }
+    function notify(m, i) { const a = document.getElementById('cool-alert'); document.getElementById('alert-icon').innerText = i || "✅"; document.getElementById('alert-msg').innerText = m; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'), 3000); }
     
     checkUser();
 </script>
