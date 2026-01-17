@@ -491,21 +491,51 @@
         }
     }
 
-    async function updateLoyverse() {
-        const btn = document.getElementById('btn-loyverse');
-        const oldTxt = btn.innerText; btn.innerText = "Processing..."; btn.disabled = true;
+async function updateLoyverse() {
         const amt = parseFloat(document.getElementById('loyverse-input').value);
-        if(!amt && amt !== 0) { btn.innerText = oldTxt; btn.disabled = false; return notify("Enter amount", "⚠️"); }
-        const pstNow = await getPSTTime();
-        const entry = { type: 'POS_REF', amt, chan: 'System', desc: 'POS Reference Update', staff: 'System', auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
-        const { error } = await _supabase.from('transactions').insert([entry]);
-        btn.innerText = oldTxt; btn.disabled = false;
-        if (!error) { 
-            document.getElementById('loyverse-input').value=''; 
-            notify("Saved!"); 
-            fetchCloudData(); 
-        }
-        else notify("Error Saving", "❌");
+        if(!amt && amt !== 0) return notify("Enter amount", "⚠️");
+
+        // 1. Setup the Confirmation Modal
+        document.getElementById('m-title').innerText = "Confirm Loyverse Update";
+        document.getElementById('m-body').innerHTML = `<b>New Total:</b> ₱${amt.toLocaleString()}<br><b>User:</b> ${loggedInUser.user_metadata.full_name}`;
+        document.getElementById('m-imgs').innerHTML = ''; // No photos for Loyverse
+        document.getElementById('modal').style.display = 'flex';
+
+        // 2. Setup the Confirm Button inside the Modal
+        document.getElementById('m-confirm').onclick = async () => {
+            const mConfirm = document.getElementById('m-confirm');
+            const oldTxt = mConfirm.innerText; 
+            mConfirm.innerText = "Processing..."; 
+            mConfirm.disabled = true;
+
+            const pstNow = await getPSTTime();
+            const entry = { 
+                type: 'POS_REF', 
+                amt, 
+                chan: 'System', 
+                desc: 'POS Reference Update', 
+                staff: 'System', 
+                auth_user: loggedInUser.email, 
+                google_name: loggedInUser.user_metadata.full_name, 
+                time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), 
+                date: pstNow.toLocaleDateString(), 
+                isoDate: getShiftDate(pstNow) 
+            };
+
+            const { error } = await _supabase.from('transactions').insert([entry]);
+            
+            mConfirm.innerText = oldTxt; 
+            mConfirm.disabled = false;
+
+            if (!error) { 
+                closeModal();
+                document.getElementById('loyverse-input').value = ''; 
+                notify("Saved!"); 
+                fetchCloudData(); 
+            } else {
+                notify("Error Saving", "❌");
+            }
+        };
     }
 
  async function sync() {
