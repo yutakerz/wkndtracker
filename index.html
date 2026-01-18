@@ -775,8 +775,8 @@
 
     function buildReport() {
     const table = document.getElementById('main-table'); 
-    let sRev = 0, sExp = 0, tPos = 0; // Period-specific (Today)
-    let cumTr = 0, cumTe = 0; // Running total (Cumulative)
+    let sRev = 0, sExp = 0, tPos = 0; 
+    let cumTr = 0, cumTe = 0; 
     
     const dVal = document.getElementById('filter-date').value; 
     const startVal = document.getElementById('filter-date-start').value; 
@@ -786,23 +786,24 @@
     let shiftStart, shiftEnd;
 
     if (currentReportType === 'daily') {
-        shiftStart = new Date(dVal + " 08:00:00");
+        shiftStart = new Date(dVal);
+        shiftStart.setHours(8, 0, 0, 0);
         shiftEnd = new Date(shiftStart);
         shiftEnd.setDate(shiftEnd.getDate() + 1);
         shiftEnd.setHours(7, 59, 59, 999);
     } else if (currentReportType === 'weekly') {
-        shiftStart = new Date(startVal + " 00:00:00");
-        shiftEnd = new Date(endVal + " 23:59:59");
+        shiftStart = new Date(startVal);
+        shiftStart.setHours(8, 0, 0, 0);
+        shiftEnd = new Date(endVal);
+        shiftEnd.setDate(shiftEnd.getDate() + 1);
+        shiftEnd.setHours(7, 59, 59, 999);
     } else if (currentReportType === 'monthly') {
         const [year, month] = mVal.split('-');
-        shiftStart = new Date(year, month - 1, 1);
-        shiftEnd = new Date(year, month, 0, 23, 59, 59, 999);
+        shiftStart = new Date(year, month - 1, 1, 8, 0, 0);
+        shiftEnd = new Date(year, month, 1, 7, 59, 59, 999);
     }
 
-    let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
-    let expenseLabel = currentReportType === 'daily' ? "Period Expense Daily" : (currentReportType === 'weekly' ? "Period Expense Weekly" : "Period Expense Monthly");
-    let balanceLabel = "Overall Balance & Channels " + (currentReportType === 'daily' ? "(Today)" : (currentReportType === 'weekly' ? "(On this Week)" : "(On this Month)"));
-    
+    let balanceBeforeReport = 0;
     let repChansOverall = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
     let repChansShift = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
     let aggData = {}; 
@@ -813,7 +814,14 @@
         const c = (l.chan || "").trim();
         const entryTimestamp = new Date(l.date + " " + l.time);
 
-        // 1. CUMULATIVE CALCULATION (For the Overall Balance box only)
+        let rDate = new Date(entryTimestamp);
+        if (rDate.getHours() < 8) rDate.setDate(rDate.getDate() - 1);
+        const y = rDate.getFullYear();
+        const m = String(rDate.getMonth() + 1).padStart(2, '0');
+        const d = String(rDate.getDate()).padStart(2, '0');
+        const groupDate = `${y}-${m}-${d}`;
+
+        // 1. CUMULATIVE CALCULATION (For Top Cards)
         if (entryTimestamp <= shiftEnd) {
             if (t === "REVENUE") {
                 cumTr += val;
@@ -822,34 +830,58 @@
                 cumTe += val;
                 if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
             } else if (t === "TRANSFER") {
-                const toChan = (l.desc || "").split(' to ')[1];
+                const parts = (l.desc || "").split(' to ');
+                const toChan = parts[1];
                 if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
                 if (repChansOverall.hasOwnProperty(toChan)) repChansOverall[toChan] += val;
             }
         }
 
-        // 2. PERIOD CALCULATION (Strictly what happened Today/This Period)
+        // 2. CALCULATION FOR RUNNING BALANCE (Everything BEFORE report start)
+        if (entryTimestamp < shiftStart) {
+            if (t === "REVENUE") balanceBeforeReport += val;
+            else if (t === "EXPENSE") balanceBeforeReport -= val;
+        }
+
+        // 3. PERIOD AGGREGATION
         let inRange = entryTimestamp >= shiftStart && entryTimestamp <= shiftEnd;
         if(inRange) {
             if(t === "REVENUE") { 
                 sRev += val; 
                 if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; 
             }
-            else if (t === "EXPENSE") { 
-                sExp += val; 
-            }
+            else if (t === "EXPENSE") sExp += val; 
             else if (t === "POS_REF") tPos += val;
 
             if (currentReportType !== 'daily' && t !== 'TRANSFER') {
-                const logDate = l.date;
-                if (!aggData[logDate]) aggData[logDate] = { date: logDate, bal: 0, sNet: 0, loy: 0, exp: 0 };
-                if (t === "REVENUE") { aggData[logDate].sNet += val; aggData[logDate].bal += val; }
-                if (t === "EXPENSE") { aggData[logDate].exp += val; aggData[logDate].bal -= val; }
-                if (t === "POS_REF") aggData[logDate].loy += val;
+                if (!aggData[groupDate]) aggData[groupDate] = { date: groupDate, net: 0, sNet: 0, loy: 0, exp: 0 };
+                if (t === "REVENUE") { aggData[groupDate].sNet += val; aggData[groupDate].net += val; }
+                if (t === "EXPENSE") { aggData[groupDate].exp += val; aggData[groupDate].net -= val; }
+                if (t === "POS_REF") { aggData[groupDate].loy += val; }
             }
         }
     });
 
+    // --- CALCULATE RUNNING BALANCE FOR TABLE ---
+    let runningBalance = balanceBeforeReport;
+    let tableRows = [];
+    Object.keys(aggData).sort().forEach(dateKey => {
+        let day = aggData[dateKey];
+        runningBalance += day.net; 
+        tableRows.push({
+            date: day.date,
+            bal: runningBalance,
+            sNet: day.sNet,
+            loy: day.loy,
+            exp: day.exp
+        });
+    });
+    tableRows.reverse(); // Newest on top
+
+    let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
+    let expenseLabel = currentReportType === 'daily' ? "Period Expense Daily" : (currentReportType === 'weekly' ? "Period Expense Weekly" : "Period Expense Monthly");
+    let balanceLabel = "Overall Balance & Channels " + (currentReportType === 'daily' ? "(Today)" : (currentReportType === 'weekly' ? "(On this Week)" : "(On this Month)"));
+    
     let overallChanHtml = ''; for(let [k,v] of Object.entries(repChansOverall)) { overallChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
     let shiftChanHtml = ''; for(let [k,v] of Object.entries(repChansShift)) { shiftChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
 
@@ -875,13 +907,14 @@
             const inAmt = (t === "REVENUE" || t === "TRANSFER") ? '₱'+val.toLocaleString() : '-';
             const outAmt = (t === "EXPENSE" || t === "TRANSFER" || t === "POS_REF") ? '₱'+val.toLocaleString() : '-';
             const typeLabel = t === 'POS_REF' ? 'L' : (t === 'REVENUE' ? 'R' : (t === 'EXPENSE' ? 'E' : 'T'));
-            
             bodyHtml += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${typeLabel}</b></td><td>${l.staff}</td><td><small>${l.google_name || 'System'}</small></td><td>${l.desc}</td><td>${l.chan}</td><td>${inAmt}</td><td>${outAmt}</td><td>${photoHtml}</td></tr>`;
         });
         table.innerHTML = `<thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Verified User</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead><tbody>${bodyHtml}</tbody>`;
     } else {
         let bodyHtml = "";
-        Object.keys(aggData).sort((a,b)=>new Date(b)-new Date(a)).forEach(dateKey => { let row = aggData[dateKey]; bodyHtml += `<tr><td>${row.date}</td><td>₱${row.bal.toLocaleString()}</td><td>₱${row.sNet.toLocaleString()}</td><td>₱${row.loy.toLocaleString()}</td><td>₱${row.exp.toLocaleString()}</td></tr>`; });
+        tableRows.forEach(row => { 
+            bodyHtml += `<tr><td>${row.date}</td><td>₱${row.bal.toLocaleString()}</td><td>₱${row.sNet.toLocaleString()}</td><td>₱${row.loy.toLocaleString()}</td><td>₱${row.exp.toLocaleString()}</td></tr>`; 
+        });
         table.innerHTML = `<thead><tr><th>Date</th><th>Balance Check</th><th>Shift Net</th><th>Loyverse Profit</th><th>Daily Exp</th></tr></thead><tbody>${bodyHtml}</tbody>`;
     }
 }
