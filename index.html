@@ -171,7 +171,6 @@
         #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; }
         #lightbox img { max-width: 95%; max-height: 80%; object-fit: contain; border-radius: 10px; }
         
-        /* UPDATED: LOWERED X POSITION FOR DYNAMIC ISLAND CLEARANCE */
         .lightbox-close { 
             position: absolute; 
             top: calc(70px + env(safe-area-inset-top)); 
@@ -181,7 +180,7 @@
             cursor: pointer; 
             text-shadow: 0 0 10px rgba(0,0,0,0.5);
             z-index: 5001;
-            padding: 15px; /* Larger tap target */
+            padding: 15px; 
         }
         
         .lightbox-nav { position: absolute; bottom: 50px; display: flex; gap: 30px; width: 100%; justify-content: center; }
@@ -418,6 +417,9 @@
         }
     }
 
+    /** * UPDATED: SHIFT DATE LOGIC
+     * If before 8:00 AM, the shift belongs to the previous day.
+     */
     function getShiftDate(dateObj) {
         const hour = dateObj.getHours();
         const date = new Date(dateObj);
@@ -491,17 +493,15 @@
         }
     }
 
-async function updateLoyverse() {
+    async function updateLoyverse() {
         const amt = parseFloat(document.getElementById('loyverse-input').value);
         if(!amt && amt !== 0) return notify("Enter amount", "⚠️");
 
-        // 1. Setup the Confirmation Modal
         document.getElementById('m-title').innerText = "Confirm Loyverse Update";
         document.getElementById('m-body').innerHTML = `<b>New Total:</b> ₱${amt.toLocaleString()}<br><b>User:</b> ${loggedInUser.user_metadata.full_name}`;
-        document.getElementById('m-imgs').innerHTML = ''; // No photos for Loyverse
+        document.getElementById('m-imgs').innerHTML = ''; 
         document.getElementById('modal').style.display = 'flex';
 
-        // 2. Setup the Confirm Button inside the Modal
         document.getElementById('m-confirm').onclick = async () => {
             const mConfirm = document.getElementById('m-confirm');
             const oldTxt = mConfirm.innerText; 
@@ -538,23 +538,27 @@ async function updateLoyverse() {
         };
     }
 
- async function sync() {
+    /**
+     * UPDATED: SYNC LOGIC
+     * Dashboard totals and logs now pivot around 8:00 AM.
+     */
+    async function sync() {
         const pstNow = await getPSTTime();
         
-        // 1. DEFINE THE SHIFT WINDOW (3 PM to 4 AM)
+        // 1. DEFINE THE SHIFT WINDOW (8:00 AM Reset)
         let shiftStart = new Date(pstNow);
         let shiftEnd = new Date(pstNow);
 
-        if (pstNow.getHours() < 15) {
-            // Before 3 PM: Shift started yesterday
+        if (pstNow.getHours() < 8) {
+            // Before 8 AM: Shift started yesterday
             shiftStart.setDate(shiftStart.getDate() - 1);
-            shiftStart.setHours(15, 0, 0, 0);
-            shiftEnd.setHours(4, 0, 0, 0);
+            shiftStart.setHours(8, 0, 0, 0);
+            shiftEnd.setHours(7, 59, 59, 999);
         } else {
-            // After 3 PM: Shift started today
-            shiftStart.setHours(15, 0, 0, 0);
+            // After 8 AM: Shift started today
+            shiftStart.setHours(8, 0, 0, 0);
             shiftEnd.setDate(shiftEnd.getDate() + 1);
-            shiftEnd.setHours(4, 0, 0, 0);
+            shiftEnd.setHours(7, 59, 59, 999);
         }
 
         let tr = 0, te = 0;
@@ -572,9 +576,8 @@ async function updateLoyverse() {
             overallDiv.innerHTML += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; 
         }
 
-        // 2. FILTER LOGS BASED ON THE 3PM-4AM WINDOW
+        // 2. FILTER LOGS BASED ON THE 8AM-8AM WINDOW
         const shiftLogs = db.logs.filter(l => {
-            // Combine Date and Time columns to check the specific window
             const entryDate = new Date(l.date + " " + l.time);
             return entryDate >= shiftStart && entryDate <= shiftEnd;
         });
@@ -609,7 +612,6 @@ async function updateLoyverse() {
         pd.innerText = "₱"+dPos.toLocaleString(); 
         pd.style.color = (dRev >= dPos && dPos > 0) ? "#4ade80" : "#1e293b";
 
-        // 3. RENDER CURRENT TRANSACTION LIST (Includes 'L' for Loyverse)
         const log = document.getElementById('log-list'); 
         log.innerHTML = '';
         if (shiftLogs.length === 0) { 
@@ -625,6 +627,7 @@ async function updateLoyverse() {
         }
         if(document.getElementById('report').classList.contains('active')) buildReport();
     }
+
     async function confirmTransfer() {
         const from = document.getElementById('tf-from').value;
         const to = document.getElementById('tf-to').value;
@@ -732,15 +735,12 @@ async function updateLoyverse() {
         reader.readAsDataURL(input.files[0]);
     }
 
-async function setupFilterUI(type) {
+    async function setupFilterUI(type) {
         const dIn = document.getElementById('filter-date'); 
         const dEnd = document.getElementById('filter-date-end');
         const mIn = document.getElementById('filter-month'); 
 
-        // 1. Force the correct Philippine date even in the early morning
         const pstNow = await getPSTTime();
-        
-        // This ensures the date string is YYYY-MM-DD for the HTML input
         const year = pstNow.getFullYear();
         const month = String(pstNow.getMonth() + 1).padStart(2, '0');
         const day = String(pstNow.getDate()).padStart(2, '0');
@@ -766,7 +766,7 @@ async function setupFilterUI(type) {
         }
         else { 
             dIn.style.display="block"; 
-            dIn.value = todayPST; // Now correctly shows 2026-01-18
+            dIn.value = todayPST;
         }
         
         document.getElementById('table-label').innerText = labelText; 
@@ -775,14 +775,17 @@ async function setupFilterUI(type) {
 
     function updateReportFilter() { buildReport(); }
 
-function buildReport() {
+    /**
+     * UPDATED: REPORT BUILDING
+     * Changed window from 3PM to 8:00 AM.
+     */
+    function buildReport() {
         const table = document.getElementById('main-table'); 
         let tr = 0, te = 0, tPos = 0, sRev = 0, sExp = 0;
         const dVal = document.getElementById('filter-date').value; 
         const dEnd = document.getElementById('filter-date-end').value; 
         const mVal = document.getElementById('filter-month').value;
 
-        // 1. DEFINE REPORT LABELS
         let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
         let expenseLabel = currentReportType === 'daily' ? "Period Expense Daily" : (currentReportType === 'weekly' ? "Period Expense Weekly" : "Period Expense Monthly");
         let balanceLabel = "Overall Balance & Channels " + (currentReportType === 'daily' ? "(Today)" : (currentReportType === 'weekly' ? "(On this Week)" : "(On this Month)"));
@@ -792,24 +795,19 @@ function buildReport() {
         let repChansExp = { Cash:0, GCash:0, Maya:0, BPI:0 };
         let aggData = {}; 
 
-        // 2. SET UP THE SHIFT WINDOW FOR THE 'DAY' MENU
-        // Format of dVal is YYYY-MM-DD. Convert to MM/DD/YYYY to match your database.
-        const selectedDateParts = dVal.split('-');
-        const reportDateStr = `${selectedDateParts[1]}/${selectedDateParts[2]}/${selectedDateParts[0]}`;
-        
-        const shiftEnd = new Date(dVal + " 04:00:00");
-        const shiftStart = new Date(shiftEnd);
-        shiftStart.setDate(shiftStart.getDate() - 1);
-        shiftStart.setHours(15, 0, 0, 0);
+        // 8:00 AM WINDOW LOGIC FOR REPORTS
+        const shiftStart = new Date(dVal + " 08:00:00");
+        const shiftEnd = new Date(shiftStart);
+        shiftEnd.setDate(shiftEnd.getDate() + 1);
+        shiftEnd.setHours(7, 59, 59, 999);
 
         db.logs.forEach(l => {
             const val = parseFloat(l.amt || l.amount) || 0; 
             const t = (l.type || "").trim().toUpperCase(); 
             const c = (l.chan || "").trim();
-            const logDate = l.date; // MM/DD/YYYY
+            const logDate = l.date; 
             const entryTimestamp = new Date(l.date + " " + l.time);
 
-            // LOGIC FOR AGGREGATE TOTALS (TOP CARDS)
             let inRange = false;
             if (currentReportType === 'daily') {
                 inRange = entryTimestamp >= shiftStart && entryTimestamp <= shiftEnd;
@@ -819,14 +817,10 @@ function buildReport() {
                 const checkDate = new Date(l.date);
                 inRange = checkDate >= startDate && checkDate <= endDate;
             } else if (currentReportType === 'monthly') {
-    // Splits "2026-01" into ["2026", "01"]
-    const [year, month] = mVal.split('-');
-    // Converts "01" to "1" to match your database format "1/17/2026"
-    const dbMonth = parseInt(month).toString(); 
-    
-    // Checks if the date string starts with the month and ends with the year
-    inRange = logDate.startsWith(dbMonth + '/') && logDate.endsWith(year);
-}
+                const [year, month] = mVal.split('-');
+                const dbMonth = parseInt(month).toString(); 
+                inRange = logDate.startsWith(dbMonth + '/') && logDate.endsWith(year);
+            }
 
             if(inRange) {
                 if(t === "REVENUE") { 
@@ -843,7 +837,7 @@ function buildReport() {
                 }
                 else if (t === "POS_REF") tPos += val;
                 else if (t === "TRANSFER") {
-                    const toChan = l.desc.split(' to ')[1];
+                    const toChan = (l.desc || "").split(' to ')[1];
                     if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
                     if (repChansOverall.hasOwnProperty(toChan)) repChansOverall[toChan] += val;
                 }
@@ -857,18 +851,16 @@ function buildReport() {
             }
         });
 
-        // 3. RENDER UI CARDS
         let overallChanHtml = ''; for(let [k,v] of Object.entries(repChansOverall)) { overallChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
         let shiftChanHtml = ''; for(let [k,v] of Object.entries(repChansShift)) { shiftChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
         let expChanHtml = ''; for(let [k,v] of Object.entries(repChansExp)) { expChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
 
         document.getElementById('rep-cards').innerHTML = `
             <div class="card"><h2 style="color:#64748b">${balanceLabel}</h2><div class="net-total" style="color:#1e293b; font-size: 1.6rem;">₱${(tr - te).toLocaleString()}</div><div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:8px;"><span>Rev: <b style="color:var(--success)">₱${tr.toLocaleString()}</b></span><span>Exp: <b style="color:var(--danger)">₱${te.toLocaleString()}</b></span></div>${overallChanHtml}</div>
-            <div class="card"><h2 style="color: #64748b;">Shift Net (3PM-4AM Window)</h2><div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div><div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>${shiftChanHtml}</div>
+            <div class="card"><h2 style="color: #64748b;">Shift Net (8AM-8AM Window)</h2><div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div><div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>${shiftChanHtml}</div>
             <div class="card"><h2 style="color: #64748b;">${loyverseLabel}</h2><div style="font-size:1.6rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div></div>
             <div class="card"><h2 style="color: #64748b;">${expenseLabel}</h2><div class="net-total" style="font-size:1.6rem; font-weight:800; color:var(--danger);">₱${sExp.toLocaleString()}</div><div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>${expChanHtml}</div>`;
 
-        // 4. RENDER TABLE
         if (currentReportType === 'daily') {
             let bodyHtml = "";
             db.logs.filter(l => {
