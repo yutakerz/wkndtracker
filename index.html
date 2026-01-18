@@ -11,6 +11,8 @@
     <link rel="apple-touch-icon" href="logo.jpg">
     <link rel="manifest" href="manifest.json">
     
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -57,7 +59,7 @@
             width: auto;
             min-width: 300px;
             background: rgba(255, 255, 255, 0.6); 
-            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
             display: flex; align-items: center; justify-content: center; 
             padding: 6px;
             z-index: 2000; 
@@ -351,6 +353,7 @@
             <input type="date" id="filter-date" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
             <input type="date" id="filter-date-end" style="width: auto; margin-bottom: 0; display:none;" onchange="updateReportFilter()">
             <input type="month" id="filter-month" style="width: auto; margin-bottom: 0; display: none;" onchange="updateReportFilter()">
+            <input type="text" id="filter-range" style="width: auto; margin-bottom: 0; display:none;" placeholder="Select Range">
         </div>
         
         <div id="rep-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:10px; margin-bottom:20px;"></div>
@@ -404,6 +407,8 @@
     let lbPhotos = [];
     let lbIndex = 0;
     let touchStartX = 0;
+    
+    let rangePickerInstance = null;
 
     async function getPSTTime() {
         try {
@@ -417,9 +422,6 @@
         }
     }
 
-    /** * UPDATED: SHIFT DATE LOGIC
-     * If before 8:00 AM, the shift belongs to the previous day.
-     */
     function getShiftDate(dateObj) {
         const hour = dateObj.getHours();
         const date = new Date(dateObj);
@@ -538,24 +540,17 @@
         };
     }
 
-    /**
-     * UPDATED: SYNC LOGIC
-     * Dashboard totals and logs now pivot around 8:00 AM.
-     */
     async function sync() {
         const pstNow = await getPSTTime();
         
-        // 1. DEFINE THE SHIFT WINDOW (8:00 AM Reset)
         let shiftStart = new Date(pstNow);
         let shiftEnd = new Date(pstNow);
 
         if (pstNow.getHours() < 8) {
-            // Before 8 AM: Shift started yesterday
             shiftStart.setDate(shiftStart.getDate() - 1);
             shiftStart.setHours(8, 0, 0, 0);
             shiftEnd.setHours(7, 59, 59, 999);
         } else {
-            // After 8 AM: Shift started today
             shiftStart.setHours(8, 0, 0, 0);
             shiftEnd.setDate(shiftEnd.getDate() + 1);
             shiftEnd.setHours(7, 59, 59, 999);
@@ -576,7 +571,6 @@
             overallDiv.innerHTML += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; 
         }
 
-        // 2. FILTER LOGS BASED ON THE 8AM-8AM WINDOW
         const shiftLogs = db.logs.filter(l => {
             const entryDate = new Date(l.date + " " + l.time);
             return entryDate >= shiftStart && entryDate <= shiftEnd;
@@ -739,6 +733,7 @@
         const dIn = document.getElementById('filter-date'); 
         const dEnd = document.getElementById('filter-date-end');
         const mIn = document.getElementById('filter-month'); 
+        const rIn = document.getElementById('filter-range');
 
         const pstNow = await getPSTTime();
         const year = pstNow.getFullYear();
@@ -749,6 +744,7 @@
         dIn.style.display = "none"; 
         dEnd.style.display = "none"; 
         mIn.style.display = "none";
+        rIn.style.display = "none";
         
         let labelText = "Daily Transaction";
         
@@ -759,10 +755,16 @@
         } 
         else if (type === 'weekly') { 
             labelText = "Weekly Transaction"; 
-            dIn.style.display="block"; 
-            dEnd.style.display="block"; 
-            dIn.value = todayPST; 
-            dEnd.value = todayPST; 
+            rIn.style.display="block";
+            if(rangePickerInstance) rangePickerInstance.destroy();
+            rangePickerInstance = flatpickr("#filter-range", {
+                mode: "range",
+                dateFormat: "m/d/Y",
+                defaultDate: [todayPST, todayPST],
+                onChange: function(selectedDates) {
+                    if (selectedDates.length === 2) buildReport();
+                }
+            });
         }
         else { 
             dIn.style.display="block"; 
@@ -775,16 +777,30 @@
 
     function updateReportFilter() { buildReport(); }
 
-    /**
-     * UPDATED: REPORT BUILDING
-     * Changed window from 3PM to 8:00 AM.
-     */
     function buildReport() {
         const table = document.getElementById('main-table'); 
         let tr = 0, te = 0, tPos = 0, sRev = 0, sExp = 0;
+        
         const dVal = document.getElementById('filter-date').value; 
         const dEnd = document.getElementById('filter-date-end').value; 
         const mVal = document.getElementById('filter-month').value;
+
+        let shiftStart, shiftEnd;
+
+        if (currentReportType === 'daily') {
+            shiftStart = new Date(dVal + " 08:00:00");
+            shiftEnd = new Date(shiftStart);
+            shiftEnd.setDate(shiftEnd.getDate() + 1);
+            shiftEnd.setHours(7, 59, 59, 999);
+        } else if (currentReportType === 'weekly' && rangePickerInstance) {
+            const dates = rangePickerInstance.selectedDates;
+            if (dates.length === 2) {
+                shiftStart = new Date(dates[0]);
+                shiftStart.setHours(0,0,0,0);
+                shiftEnd = new Date(dates[1]);
+                shiftEnd.setHours(23,59,59,999);
+            }
+        }
 
         let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
         let expenseLabel = currentReportType === 'daily' ? "Period Expense Daily" : (currentReportType === 'weekly' ? "Period Expense Weekly" : "Period Expense Monthly");
@@ -795,12 +811,6 @@
         let repChansExp = { Cash:0, GCash:0, Maya:0, BPI:0 };
         let aggData = {}; 
 
-        // 8:00 AM WINDOW LOGIC FOR REPORTS
-        const shiftStart = new Date(dVal + " 08:00:00");
-        const shiftEnd = new Date(shiftStart);
-        shiftEnd.setDate(shiftEnd.getDate() + 1);
-        shiftEnd.setHours(7, 59, 59, 999);
-
         db.logs.forEach(l => {
             const val = parseFloat(l.amt || l.amount) || 0; 
             const t = (l.type || "").trim().toUpperCase(); 
@@ -809,13 +819,8 @@
             const entryTimestamp = new Date(l.date + " " + l.time);
 
             let inRange = false;
-            if (currentReportType === 'daily') {
-                inRange = entryTimestamp >= shiftStart && entryTimestamp <= shiftEnd;
-            } else if (currentReportType === 'weekly') {
-                const startDate = new Date(dVal);
-                const endDate = new Date(dEnd);
-                const checkDate = new Date(l.date);
-                inRange = checkDate >= startDate && checkDate <= endDate;
+            if (currentReportType === 'daily' || currentReportType === 'weekly') {
+                if(shiftStart && shiftEnd) inRange = entryTimestamp >= shiftStart && entryTimestamp <= shiftEnd;
             } else if (currentReportType === 'monthly') {
                 const [year, month] = mVal.split('-');
                 const dbMonth = parseInt(month).toString(); 
@@ -837,7 +842,8 @@
                 }
                 else if (t === "POS_REF") tPos += val;
                 else if (t === "TRANSFER") {
-                    const toChan = (l.desc || "").split(' to ')[1];
+                    const parts = (l.desc || "").split(' to ');
+                    const toChan = parts[1];
                     if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
                     if (repChansOverall.hasOwnProperty(toChan)) repChansOverall[toChan] += val;
                 }
