@@ -833,6 +833,7 @@
         let balanceBeforeReport = 0;
         let repChansOverall = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
         let repChansShift = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
+        let repChansExp = { Cash:0, GCash:0, Maya:0, BPI:0 };
         let aggData = {}; 
 
         db.logs.forEach(l => {
@@ -871,7 +872,13 @@
                     sRev += val; 
                     if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; 
                 }
-                else if (t === "EXPENSE") sExp += val; 
+                else if (t === "EXPENSE") {
+                    sExp += val; 
+                    // This specifically records the amount for the "OUT" rows in the breakdown
+                    if(repChansExp.hasOwnProperty(c)) {
+                        repChansExp[c] += val; 
+                    }
+                }
                 else if (t === "POS_REF") tPos += val;
 
                 if (currentReportType !== 'daily' && t !== 'TRANSFER') {
@@ -899,18 +906,30 @@
         });
         tableRows.reverse();
 
-        let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
+let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
         let expenseLabel = currentReportType === 'daily' ? "Period Expense Daily" : (currentReportType === 'weekly' ? "Period Expense Weekly" : "Period Expense Monthly");
         let balanceLabel = "Overall Balance & Channels " + (currentReportType === 'daily' ? "(Today)" : (currentReportType === 'weekly' ? "(On this Week)" : "(On this Month)"));
         
         let overallChanHtml = ''; for(let [k,v] of Object.entries(repChansOverall)) { overallChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
         let shiftChanHtml = ''; for(let [k,v] of Object.entries(repChansShift)) { shiftChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
 
+        // NEW: Generate the breakdown HTML for the Expense card
+        let expChanHtml = ''; 
+        ['Cash', 'GCash', 'Maya', 'BPI'].forEach(k => {
+            const v = repChansExp[k] || 0;
+            expChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`;
+        });
+        
         document.getElementById('rep-cards').innerHTML = `
             <div class="card"><h2 style="color:#64748b">${balanceLabel}</h2><div class="net-total" style="color:#1e293b; font-size: 1.6rem;">₱${(cumTr - cumTe).toLocaleString()}</div><div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:8px;"><span>Rev: <b style="color:var(--success)">₱${cumTr.toLocaleString()}</b></span><span>Exp: <b style="color:var(--danger)">₱${cumTe.toLocaleString()}</b></span></div>${overallChanHtml}</div>
             <div class="card"><h2 style="color: #64748b;">Shift Net (8AM reset)</h2><div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div><div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>${shiftChanHtml}</div>
             <div class="card"><h2 style="color: #64748b;">${loyverseLabel}</h2><div style="font-size:1.6rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div></div>
-            <div class="card"><h2 style="color: #64748b;">${expenseLabel}</h2><div class="net-total" style="font-size:1.6rem; font-weight:800; color:var(--danger);">₱${sExp.toLocaleString()}</div></div>`;
+            <div class="card">
+                <h2 style="color: #64748b;">${expenseLabel}</h2>
+                <div class="net-total" style="font-size:1.6rem; font-weight:800; color:var(--danger);">₱${sExp.toLocaleString()}</div>
+                <div style="margin-bottom: 8px; border-bottom: 1px solid #eee; margin-top: 8px;"></div>
+                ${expChanHtml}
+            </div>`;
 
         if (currentReportType === 'daily') {
             let bodyHtml = "";
