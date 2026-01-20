@@ -342,6 +342,7 @@
             
             <input type="date" id="filter-date" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
             
+
             <div id="week-range-container" style="display:none; align-items:center; gap:5px;">
                 <span style="font-size: 0.8rem; color: #94a3b8;">from</span>
                 <input type="date" id="filter-date-start" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
@@ -765,7 +766,12 @@
         const year = pstNow.getFullYear();
         const month = String(pstNow.getMonth() + 1).padStart(2, '0');
         const day = String(pstNow.getDate()).padStart(2, '0');
-        const todayPST = `${year}-${month}-${day}`;
+
+        const yearShift = pstNow.getFullYear();
+        const monthShift = String(pstNow.getMonth() + 1).padStart(2, '0');
+        const dayShift = String(pstNow.getDate()).padStart(2, '0');
+        const todayPST = `${yearShift}-${monthShift}-${dayShift}`;
+
 
         dIn.style.display = "none"; 
         mIn.style.display = "none";
@@ -808,26 +814,33 @@
         let shiftStart, shiftEnd;
 
         if (currentReportType === 'daily') {
-            shiftStart = new Date(dVal);
-            shiftStart.setHours(8, 0, 0, 0);
-            shiftEnd = new Date(shiftStart);
-            shiftEnd.setDate(shiftEnd.getDate() + 1);
-            shiftEnd.setHours(7, 59, 59, 999);
-        } else if (currentReportType === 'weekly') {
-            shiftStart = new Date(startVal);
-            shiftStart.setHours(8, 0, 0, 0);
-            shiftEnd = new Date(endVal);
-            shiftEnd.setDate(shiftEnd.getDate() + 1);
-            shiftEnd.setHours(7, 59, 59, 999);
-        } else if (currentReportType === 'monthly') {
-            // FIXED: Monthly 0 Issue (Correctly parse YYYY-MM)
-            const [year, month] = mVal.split('-');
-            shiftStart = new Date(year, month - 1, 1, 8, 0, 0);
-            shiftEnd = new Date(year, month, 0); // Last day of prev month? No, create new date properly
-            // Re-calc end of month
-            let nextMonth = new Date(year, month, 1);
-            shiftEnd = new Date(nextMonth - 1); // Last millisecond of current month
-            shiftEnd.setHours(7, 59, 59, 999); // Adjust to 8AM shift end logic if needed, or just end of cal month
+            // 1. Get the date selected in the picker (e.g., "2026-01-21")
+            let selectedDate = new Date(dVal);
+            
+            // 2. CHECK: Is it currently before 8AM on "Today"?
+            // We use standard 'new Date()' to check the user's current real-time clock
+            const now = new Date(); 
+            
+            // Check if the selected date matches "Today" (ignoring time)
+            const isSameDay = selectedDate.toDateString() === now.toDateString();
+
+            // 3. THE SMART LOGIC:
+            // If the user picked "Today" AND it is before 8:00 AM...
+            // We force the report to pull data from YESTERDAY (Jan 20).
+            if (isSameDay && now.getHours() < 8) {
+                selectedDate.setDate(selectedDate.getDate() - 1);
+            }
+
+            // 4. Set the Shift Start to 8:00 AM of that calculated date
+            const y = selectedDate.getFullYear();
+            const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const d = String(selectedDate.getDate()).padStart(2, '0');
+            
+            // Explicitly set the ISO string to avoid timezone jumps
+            shiftStart = new Date(`${y}-${m}-${d}T08:00:00`);
+            
+            // End is 7:59:59 AM of the NEXT day
+            shiftEnd = new Date(shiftStart.getTime() + (24 * 60 * 60 * 1000) - 1);
         }
 
         let balanceBeforeReport = 0;
@@ -843,7 +856,11 @@
             const entryTimestamp = new Date(l.date + " " + l.time);
 
             let rDate = new Date(entryTimestamp);
-            if (rDate.getHours() < 8) rDate.setDate(rDate.getDate() - 1);
+            // If transaction was 12am-8am, group it with the previous day's report
+            if (rDate.getHours() < 8) {
+                rDate.setDate(rDate.getDate() - 1);
+            }
+
             const y = rDate.getFullYear();
             const m = String(rDate.getMonth() + 1).padStart(2, '0');
             const d = String(rDate.getDate()).padStart(2, '0');
@@ -922,7 +939,7 @@ let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (c
         
         document.getElementById('rep-cards').innerHTML = `
             <div class="card"><h2 style="color:#64748b">${balanceLabel}</h2><div class="net-total" style="color:#1e293b; font-size: 1.6rem;">₱${(cumTr - cumTe).toLocaleString()}</div><div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:8px;"><span>Rev: <b style="color:var(--success)">₱${cumTr.toLocaleString()}</b></span><span>Exp: <b style="color:var(--danger)">₱${cumTe.toLocaleString()}</b></span></div>${overallChanHtml}</div>
-            <div class="card"><h2 style="color: #64748b;">Shift Net (8AM reset)</h2><div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div><div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>${shiftChanHtml}</div>
+            <div class="card"><h2 style="color: #64748b;">Shift Net</h2><div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div><div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>${shiftChanHtml}</div>
             <div class="card"><h2 style="color: #64748b;">${loyverseLabel}</h2><div style="font-size:1.6rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div></div>
             <div class="card">
                 <h2 style="color: #64748b;">${expenseLabel}</h2>
