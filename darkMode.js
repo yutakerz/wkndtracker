@@ -1,11 +1,23 @@
 // darkMode.js
-const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-function handleThemeChange(e) {
+// 1. THIS FUNCTION HANDLES THE CLICKS FROM YOUR MENU
+function setTheme(mode) {
+    localStorage.setItem('wknd_theme', mode);
+    applyTheme();
+}
+
+// 2. THIS FUNCTION DECIDES WHICH THEME TO SHOW
+function applyTheme() {
+    const savedMode = localStorage.getItem('wknd_theme') || 'system';
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Logic: Is it dark because you clicked "Dark" OR because of "System" settings?
+    const shouldBeDark = savedMode === 'dark' || (savedMode === 'system' && systemDark);
+
     const root = document.documentElement;
     const existingStyle = document.getElementById('dark-mode-style');
 
-    if (e.matches) {
+    if (shouldBeDark) {
         // --- DARK MODE ON ---
         root.style.setProperty('--bg', '#0f172a'); 
 
@@ -79,7 +91,6 @@ function handleThemeChange(e) {
             `;
             document.head.appendChild(style);
         }
-
     } else {
         // --- LIGHT MODE (RESET) ---
         root.style.removeProperty('--bg');
@@ -87,10 +98,13 @@ function handleThemeChange(e) {
     }
 }
 
-// Listen for system changes
-darkModeMediaQuery.addEventListener('change', handleThemeChange);
-
-// Run check on load
-document.addEventListener('DOMContentLoaded', () => {
-    handleThemeChange(darkModeMediaQuery);
+// 3. LISTEN FOR SYSTEM CHANGES
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    // Only auto-change if the user is in "System" mode
+    if (localStorage.getItem('wknd_theme') === 'system' || !localStorage.getItem('wknd_theme')) {
+        applyTheme();
+    }
 });
+
+// 4. RUN ON PAGE LOAD
+document.addEventListener('DOMContentLoaded', applyTheme);
