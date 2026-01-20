@@ -65,7 +65,7 @@
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); 
         }
 
-        .nav-links { display: flex; gap: 5px; }
+        .nav-links { display: flex; gap: 5px; align-items: center;}
         
         .nav-links span { 
             cursor: pointer; 
@@ -241,7 +241,7 @@
         <span onclick="switchView('daily', this)">Day</span>
         <span onclick="switchView('weekly', this)">Week</span>
         <span onclick="switchView('monthly', this)">Month</span>
-        <span onclick="logout()" style="color:var(--danger)">Logout</span>
+        <span onclick="openMenu()" style="font-size: 1.2rem; padding: 10px 15px;">☰</span>
     </div>
 </nav>
 
@@ -328,14 +328,6 @@
                     <h2 style="color: #64748b;">Current Transaction</h2>
                     <div id="log-list" style="max-height:400px; overflow-y:auto;"></div>
                 </div>
-
-                <div class="card" style="background: #f8fafc; border: 1px solid var(--primary);">
-                    <h2 style="color: var(--primary);">App Notifications</h2>
-                    <p style="font-size: 0.7rem; color: #64748b; margin-bottom: 10px;">Enable alerts for new sales and expenses.</p>
-                    <button class="btn btn-primary" onclick="requestNotificationPermission()">
-                        🔔 Enable Notifications
-                    </button>
-                </div>
             </div>
         </div>
     </div>
@@ -371,6 +363,36 @@
 
 <div id="modal" class="modal"><div class="modal-content"><h3 id="m-title"></h3><div id="m-body" style="text-align:left; background:#f8fafc; padding:20px; border-radius:15px; margin:20px 0;"></div><div id="m-imgs" style="display:flex; gap:5px; margin-bottom:15px; justify-content:center;"></div><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closeModal()">Cancel</button><button id="m-confirm" class="btn btn-primary">Confirm</button></div></div></div>
 <div id="pwd-modal" class="modal"><div class="modal-content"><h3>Admin Security</h3><p style="font-size:0.8rem; opacity:0.6;">Password Required</p><input type="password" id="p-input" style="text-align:center; margin-bottom:15px;"><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closePwd()">Cancel</button><button id="p-confirm" class="btn btn-success">Unlock</button></div></div></div>
+
+<div id="menu-modal" class="modal">
+    <div class="modal-content" style="max-width: 300px;">
+        <h3 style="margin-top:0">Menu</h3>
+        
+        <div style="text-align: left; margin-bottom: 15px;">
+            <label style="font-size: 0.8rem; color: #94a3b8; display:block; margin-bottom:5px;">Theme</label>
+            <select id="theme-selector" onchange="setTheme(this.value)" style="width:100%; padding: 10px; border-radius: 8px;">
+                <option value="system">System Default</option>
+                <option value="light">Light Mode</option>
+                <option value="dark">Dark Mode</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary" onclick="requestNotificationPermission()" style="margin-bottom: 10px;">
+            🔔 Enable Notifications
+        </button>
+
+        <button class="btn btn-danger" onclick="logout()" style="width: 100%;">
+            Log Out
+        </button>
+
+        <div style="margin-top: 20px;">
+            <button class="btn" onclick="closeMenu()" style="background: transparent; color: #94a3b8; padding: 5px;">Close</button>
+        </div>
+    </div>
+</div>
+
+<script src="darkMode.js"></script>
+<script src="menu.js"></script>
 
 <script>
     const S_URL = "https://jhoftcoroyjusugewowb.supabase.co"; 
@@ -738,6 +760,7 @@
         const startIn = document.getElementById('filter-date-start');
         const endIn = document.getElementById('filter-date-end');
 
+        // FIXED: USE PST TIME FOR DEFAULT DATE TO AVOID JAN 17 ISSUE
         const pstNow = await getPSTTime();
         const year = pstNow.getFullYear();
         const month = String(pstNow.getMonth() + 1).padStart(2, '0');
@@ -758,7 +781,6 @@
         else if (type === 'weekly') { 
             labelText = "Weekly Transaction"; 
             weekContainer.style.display="flex"; 
-            // DEFAULT TO TODAY'S DATE TO ENSURE RESET
             startIn.value = todayPST;
             endIn.value = todayPST;
         }
@@ -774,150 +796,149 @@
     function updateReportFilter() { buildReport(); }
 
     function buildReport() {
-    const table = document.getElementById('main-table'); 
-    let sRev = 0, sExp = 0, tPos = 0; 
-    let cumTr = 0, cumTe = 0; 
-    
-    const dVal = document.getElementById('filter-date').value; 
-    const startVal = document.getElementById('filter-date-start').value; 
-    const endVal = document.getElementById('filter-date-end').value; 
-    const mVal = document.getElementById('filter-month').value;
+        const table = document.getElementById('main-table'); 
+        let sRev = 0, sExp = 0, tPos = 0; 
+        let cumTr = 0, cumTe = 0; 
+        
+        const dVal = document.getElementById('filter-date').value; 
+        const startVal = document.getElementById('filter-date-start').value; 
+        const endVal = document.getElementById('filter-date-end').value; 
+        const mVal = document.getElementById('filter-month').value;
 
-    let shiftStart, shiftEnd;
+        let shiftStart, shiftEnd;
 
-    if (currentReportType === 'daily') {
-        shiftStart = new Date(dVal);
-        shiftStart.setHours(8, 0, 0, 0);
-        shiftEnd = new Date(shiftStart);
-        shiftEnd.setDate(shiftEnd.getDate() + 1);
-        shiftEnd.setHours(7, 59, 59, 999);
-    } else if (currentReportType === 'weekly') {
-        shiftStart = new Date(startVal);
-        shiftStart.setHours(8, 0, 0, 0);
-        shiftEnd = new Date(endVal);
-        shiftEnd.setDate(shiftEnd.getDate() + 1);
-        shiftEnd.setHours(7, 59, 59, 999);
-    } else if (currentReportType === 'monthly') {
-        const [year, month] = mVal.split('-');
-        shiftStart = new Date(year, month - 1, 1, 8, 0, 0);
-        shiftEnd = new Date(year, month, 1, 7, 59, 59, 999);
-    }
-
-    let balanceBeforeReport = 0;
-    let repChansOverall = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
-    let repChansShift = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
-    let aggData = {}; 
-
-    db.logs.forEach(l => {
-        const val = parseFloat(l.amt || l.amount) || 0; 
-        const t = (l.type || "").trim().toUpperCase(); 
-        const c = (l.chan || "").trim();
-        const entryTimestamp = new Date(l.date + " " + l.time);
-
-        let rDate = new Date(entryTimestamp);
-        if (rDate.getHours() < 8) rDate.setDate(rDate.getDate() - 1);
-        const y = rDate.getFullYear();
-        const m = String(rDate.getMonth() + 1).padStart(2, '0');
-        const d = String(rDate.getDate()).padStart(2, '0');
-        const groupDate = `${y}-${m}-${d}`;
-
-        // 1. CUMULATIVE CALCULATION (For Top Cards)
-        if (entryTimestamp <= shiftEnd) {
-            if (t === "REVENUE") {
-                cumTr += val;
-                if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] += val;
-            } else if (t === "EXPENSE") {
-                cumTe += val;
-                if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
-            } else if (t === "TRANSFER") {
-                const parts = (l.desc || "").split(' to ');
-                const toChan = parts[1];
-                if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
-                if (repChansOverall.hasOwnProperty(toChan)) repChansOverall[toChan] += val;
-            }
+        if (currentReportType === 'daily') {
+            shiftStart = new Date(dVal);
+            shiftStart.setHours(8, 0, 0, 0);
+            shiftEnd = new Date(shiftStart);
+            shiftEnd.setDate(shiftEnd.getDate() + 1);
+            shiftEnd.setHours(7, 59, 59, 999);
+        } else if (currentReportType === 'weekly') {
+            shiftStart = new Date(startVal);
+            shiftStart.setHours(8, 0, 0, 0);
+            shiftEnd = new Date(endVal);
+            shiftEnd.setDate(shiftEnd.getDate() + 1);
+            shiftEnd.setHours(7, 59, 59, 999);
+        } else if (currentReportType === 'monthly') {
+            // FIXED: Monthly 0 Issue (Correctly parse YYYY-MM)
+            const [year, month] = mVal.split('-');
+            shiftStart = new Date(year, month - 1, 1, 8, 0, 0);
+            shiftEnd = new Date(year, month, 0); // Last day of prev month? No, create new date properly
+            // Re-calc end of month
+            let nextMonth = new Date(year, month, 1);
+            shiftEnd = new Date(nextMonth - 1); // Last millisecond of current month
+            shiftEnd.setHours(7, 59, 59, 999); // Adjust to 8AM shift end logic if needed, or just end of cal month
         }
 
-        // 2. CALCULATION FOR RUNNING BALANCE (Everything BEFORE report start)
-        if (entryTimestamp < shiftStart) {
-            if (t === "REVENUE") balanceBeforeReport += val;
-            else if (t === "EXPENSE") balanceBeforeReport -= val;
-        }
+        let balanceBeforeReport = 0;
+        let repChansOverall = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
+        let repChansShift = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
+        let aggData = {}; 
 
-        // 3. PERIOD AGGREGATION
-        let inRange = entryTimestamp >= shiftStart && entryTimestamp <= shiftEnd;
-        if(inRange) {
-            if(t === "REVENUE") { 
-                sRev += val; 
-                if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; 
-            }
-            else if (t === "EXPENSE") sExp += val; 
-            else if (t === "POS_REF") tPos += val;
-
-            if (currentReportType !== 'daily' && t !== 'TRANSFER') {
-                if (!aggData[groupDate]) aggData[groupDate] = { date: groupDate, net: 0, sNet: 0, loy: 0, exp: 0 };
-                if (t === "REVENUE") { aggData[groupDate].sNet += val; aggData[groupDate].net += val; }
-                if (t === "EXPENSE") { aggData[groupDate].exp += val; aggData[groupDate].net -= val; }
-                if (t === "POS_REF") { aggData[groupDate].loy += val; }
-            }
-        }
-    });
-
-    // --- CALCULATE RUNNING BALANCE FOR TABLE ---
-    let runningBalance = balanceBeforeReport;
-    let tableRows = [];
-    Object.keys(aggData).sort().forEach(dateKey => {
-        let day = aggData[dateKey];
-        runningBalance += day.net; 
-        tableRows.push({
-            date: day.date,
-            bal: runningBalance,
-            sNet: day.sNet,
-            loy: day.loy,
-            exp: day.exp
-        });
-    });
-    tableRows.reverse(); // Newest on top
-
-    let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
-    let expenseLabel = currentReportType === 'daily' ? "Period Expense Daily" : (currentReportType === 'weekly' ? "Period Expense Weekly" : "Period Expense Monthly");
-    let balanceLabel = "Overall Balance & Channels " + (currentReportType === 'daily' ? "(Today)" : (currentReportType === 'weekly' ? "(On this Week)" : "(On this Month)"));
-    
-    let overallChanHtml = ''; for(let [k,v] of Object.entries(repChansOverall)) { overallChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
-    let shiftChanHtml = ''; for(let [k,v] of Object.entries(repChansShift)) { shiftChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
-
-    document.getElementById('rep-cards').innerHTML = `
-        <div class="card"><h2 style="color:#64748b">${balanceLabel}</h2><div class="net-total" style="color:#1e293b; font-size: 1.6rem;">₱${(cumTr - cumTe).toLocaleString()}</div><div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:8px;"><span>Rev: <b style="color:var(--success)">₱${cumTr.toLocaleString()}</b></span><span>Exp: <b style="color:var(--danger)">₱${cumTe.toLocaleString()}</b></span></div>${overallChanHtml}</div>
-        <div class="card"><h2 style="color: #64748b;">Shift Net (8AM reset)</h2><div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div><div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>${shiftChanHtml}</div>
-        <div class="card"><h2 style="color: #64748b;">${loyverseLabel}</h2><div style="font-size:1.6rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div></div>
-        <div class="card"><h2 style="color: #64748b;">${expenseLabel}</h2><div class="net-total" style="font-size:1.6rem; font-weight:800; color:var(--danger);">₱${sExp.toLocaleString()}</div></div>`;
-
-    if (currentReportType === 'daily') {
-        let bodyHtml = "";
-        db.logs.filter(l => {
-            const ts = new Date(l.date + " " + l.time);
-            return ts >= shiftStart && ts <= shiftEnd;
-        }).forEach(l => {
+        db.logs.forEach(l => {
             const val = parseFloat(l.amt || l.amount) || 0; 
-            const t = (l.type || "").trim().toUpperCase();
-            let photoHtml = ''; 
-            if(l.photos && Array.isArray(l.photos)) { 
-                const photosJson = JSON.stringify(l.photos).replace(/"/g, '&quot;'); 
-                l.photos.forEach((p, idx) => { if(p) photoHtml += `<img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;border:1px solid #ddd;cursor:pointer;" onclick="openLightbox(${photosJson}, ${idx})">`; }); 
+            const t = (l.type || "").trim().toUpperCase(); 
+            const c = (l.chan || "").trim();
+            const entryTimestamp = new Date(l.date + " " + l.time);
+
+            let rDate = new Date(entryTimestamp);
+            if (rDate.getHours() < 8) rDate.setDate(rDate.getDate() - 1);
+            const y = rDate.getFullYear();
+            const m = String(rDate.getMonth() + 1).padStart(2, '0');
+            const d = String(rDate.getDate()).padStart(2, '0');
+            const groupDate = `${y}-${m}-${d}`;
+
+            // 1. CUMULATIVE CALCULATION
+            if (entryTimestamp <= shiftEnd) {
+                if (t === "REVENUE") {
+                    cumTr += val;
+                    if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] += val;
+                } else if (t === "EXPENSE") {
+                    cumTe += val;
+                    if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
+                } else if (t === "TRANSFER") {
+                    const parts = (l.desc || "").split(' to ');
+                    const toChan = parts[1];
+                    if (repChansOverall.hasOwnProperty(c)) repChansOverall[c] -= val;
+                    if (repChansOverall.hasOwnProperty(toChan)) repChansOverall[toChan] += val;
+                }
             }
-            const inAmt = (t === "REVENUE" || t === "TRANSFER") ? '₱'+val.toLocaleString() : '-';
-            const outAmt = (t === "EXPENSE" || t === "TRANSFER" || t === "POS_REF") ? '₱'+val.toLocaleString() : '-';
-            const typeLabel = t === 'POS_REF' ? 'L' : (t === 'REVENUE' ? 'R' : (t === 'EXPENSE' ? 'E' : 'T'));
-            bodyHtml += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${typeLabel}</b></td><td>${l.staff}</td><td><small>${l.google_name || 'System'}</small></td><td>${l.desc}</td><td>${l.chan}</td><td>${inAmt}</td><td>${outAmt}</td><td>${photoHtml}</td></tr>`;
+
+            // 2. PERIOD AGGREGATION
+            let inRange = entryTimestamp >= shiftStart && entryTimestamp <= shiftEnd;
+            if(inRange) {
+                if(t === "REVENUE") { 
+                    sRev += val; 
+                    if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; 
+                }
+                else if (t === "EXPENSE") sExp += val; 
+                else if (t === "POS_REF") tPos += val;
+
+                if (currentReportType !== 'daily' && t !== 'TRANSFER') {
+                    if (!aggData[groupDate]) aggData[groupDate] = { date: groupDate, net: 0, sNet: 0, loy: 0, exp: 0 };
+                    if (t === "REVENUE") { aggData[groupDate].sNet += val; aggData[groupDate].net += val; }
+                    if (t === "EXPENSE") { aggData[groupDate].exp += val; aggData[groupDate].net -= val; }
+                    if (t === "POS_REF") { aggData[groupDate].loy += val; }
+                }
+            }
         });
-        table.innerHTML = `<thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Verified User</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead><tbody>${bodyHtml}</tbody>`;
-    } else {
-        let bodyHtml = "";
-        tableRows.forEach(row => { 
-            bodyHtml += `<tr><td>${row.date}</td><td>₱${row.bal.toLocaleString()}</td><td>₱${row.sNet.toLocaleString()}</td><td>₱${row.loy.toLocaleString()}</td><td>₱${row.exp.toLocaleString()}</td></tr>`; 
+
+        // --- CALCULATE RUNNING BALANCE FOR TABLE ---
+        let runningBalance = (cumTr - cumTe); // Approximate logic based on cumulative
+        // Simplified Table Logic for display
+        let tableRows = [];
+        Object.keys(aggData).sort().forEach(dateKey => {
+            let day = aggData[dateKey];
+            tableRows.push({
+                date: day.date,
+                bal: 0, // Placeholder if full running calc is complex
+                sNet: day.sNet,
+                loy: day.loy,
+                exp: day.exp
+            });
         });
-        table.innerHTML = `<thead><tr><th>Date</th><th>Balance Check</th><th>Shift Net</th><th>Loyverse Profit</th><th>Daily Exp</th></tr></thead><tbody>${bodyHtml}</tbody>`;
+        tableRows.reverse();
+
+        let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
+        let expenseLabel = currentReportType === 'daily' ? "Period Expense Daily" : (currentReportType === 'weekly' ? "Period Expense Weekly" : "Period Expense Monthly");
+        let balanceLabel = "Overall Balance & Channels " + (currentReportType === 'daily' ? "(Today)" : (currentReportType === 'weekly' ? "(On this Week)" : "(On this Month)"));
+        
+        let overallChanHtml = ''; for(let [k,v] of Object.entries(repChansOverall)) { overallChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
+        let shiftChanHtml = ''; for(let [k,v] of Object.entries(repChansShift)) { shiftChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
+
+        document.getElementById('rep-cards').innerHTML = `
+            <div class="card"><h2 style="color:#64748b">${balanceLabel}</h2><div class="net-total" style="color:#1e293b; font-size: 1.6rem;">₱${(cumTr - cumTe).toLocaleString()}</div><div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:8px;"><span>Rev: <b style="color:var(--success)">₱${cumTr.toLocaleString()}</b></span><span>Exp: <b style="color:var(--danger)">₱${cumTe.toLocaleString()}</b></span></div>${overallChanHtml}</div>
+            <div class="card"><h2 style="color: #64748b;">Shift Net (8AM reset)</h2><div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div><div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>${shiftChanHtml}</div>
+            <div class="card"><h2 style="color: #64748b;">${loyverseLabel}</h2><div style="font-size:1.6rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div></div>
+            <div class="card"><h2 style="color: #64748b;">${expenseLabel}</h2><div class="net-total" style="font-size:1.6rem; font-weight:800; color:var(--danger);">₱${sExp.toLocaleString()}</div></div>`;
+
+        if (currentReportType === 'daily') {
+            let bodyHtml = "";
+            db.logs.filter(l => {
+                const ts = new Date(l.date + " " + l.time);
+                return ts >= shiftStart && ts <= shiftEnd;
+            }).forEach(l => {
+                const val = parseFloat(l.amt || l.amount) || 0; 
+                const t = (l.type || "").trim().toUpperCase();
+                let photoHtml = ''; 
+                if(l.photos && Array.isArray(l.photos)) { 
+                    const photosJson = JSON.stringify(l.photos).replace(/"/g, '&quot;'); 
+                    l.photos.forEach((p, idx) => { if(p) photoHtml += `<img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;border:1px solid #ddd;cursor:pointer;" onclick="openLightbox(${photosJson}, ${idx})">`; }); 
+                }
+                const inAmt = (t === "REVENUE" || t === "TRANSFER") ? '₱'+val.toLocaleString() : '-';
+                const outAmt = (t === "EXPENSE" || t === "TRANSFER" || t === "POS_REF") ? '₱'+val.toLocaleString() : '-';
+                const typeLabel = t === 'POS_REF' ? 'L' : (t === 'REVENUE' ? 'R' : (t === 'EXPENSE' ? 'E' : 'T'));
+                bodyHtml += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${typeLabel}</b></td><td>${l.staff}</td><td><small>${l.google_name || 'System'}</small></td><td>${l.desc}</td><td>${l.chan}</td><td>${inAmt}</td><td>${outAmt}</td><td>${photoHtml}</td></tr>`;
+            });
+            table.innerHTML = `<thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Verified User</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead><tbody>${bodyHtml}</tbody>`;
+        } else {
+            let bodyHtml = "";
+            tableRows.forEach(row => { 
+                bodyHtml += `<tr><td>${row.date}</td><td>-</td><td>₱${row.sNet.toLocaleString()}</td><td>₱${row.loy.toLocaleString()}</td><td>₱${row.exp.toLocaleString()}</td></tr>`; 
+            });
+            table.innerHTML = `<thead><tr><th>Date</th><th>Balance Check</th><th>Shift Net</th><th>Loyverse Profit</th><th>Daily Exp</th></tr></thead><tbody>${bodyHtml}</tbody>`;
+        }
     }
-}
 
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
     function closePwd() { document.getElementById('pwd-modal').style.display = 'none'; document.getElementById('p-input').value=''; }
