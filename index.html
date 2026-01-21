@@ -841,7 +841,24 @@
             
             // End is 7:59:59 AM of the NEXT day
             shiftEnd = new Date(shiftStart.getTime() + (24 * 60 * 60 * 1000) - 1);
+        } 
+        // --- ADD THIS BLOCK BACK ---
+        else if (currentReportType === 'weekly') {
+            shiftStart = new Date(startVal);
+            shiftStart.setHours(8, 0, 0, 0);
+            
+            shiftEnd = new Date(endVal);
+            shiftEnd.setDate(shiftEnd.getDate() + 1);
+            shiftEnd.setHours(7, 59, 59, 999);
+        } 
+        else if (currentReportType === 'monthly') {
+            const [year, month] = mVal.split('-');
+            // Start: 1st of month at 8:00 AM
+            shiftStart = new Date(year, month - 1, 1, 8, 0, 0);
+            // End: 1st of NEXT month at 7:59 AM
+            shiftEnd = new Date(year, month, 1, 7, 59, 59, 999);
         }
+        // ---------------------------
 
         let balanceBeforeReport = 0;
         let repChansOverall = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
@@ -908,22 +925,28 @@
         });
 
         // --- CALCULATE RUNNING BALANCE FOR TABLE ---
-        let runningBalance = (cumTr - cumTe); // Approximate logic based on cumulative
-        // Simplified Table Logic for display
+        // 1. Start with the final balance at the end of the period
+        let currentBal = (cumTr - cumTe); 
         let tableRows = [];
-        Object.keys(aggData).sort().forEach(dateKey => {
+        
+        // 2. Loop through dates from NEWEST to OLDEST
+        Object.keys(aggData).sort().reverse().forEach(dateKey => {
             let day = aggData[dateKey];
+            
             tableRows.push({
                 date: day.date,
-                bal: 0, // Placeholder if full running calc is complex
+                bal: currentBal, // Record the balance at the end of this day
                 sNet: day.sNet,
                 loy: day.loy,
                 exp: day.exp
             });
+            
+            // 3. Subtract this day's net change to prepare the balance for the previous day
+            currentBal -= day.net;
         });
-        tableRows.reverse();
 
-let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
+        // ... (Expense/Loyverse Label Logic stays here) ...
+        let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (currentReportType === 'weekly' ? "Loyverse Weekly Profit" : "Loyverse Monthly Profit");
         let expenseLabel = currentReportType === 'daily' ? "Period Expense Daily" : (currentReportType === 'weekly' ? "Period Expense Weekly" : "Period Expense Monthly");
         let balanceLabel = "Overall Balance & Channels " + (currentReportType === 'daily' ? "(Today)" : (currentReportType === 'weekly' ? "(On this Week)" : "(On this Month)"));
         
@@ -949,11 +972,13 @@ let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (c
             </div>`;
 
         if (currentReportType === 'daily') {
+            // ... (Your existing daily logic remains the same) ...
             let bodyHtml = "";
             db.logs.filter(l => {
                 const ts = new Date(l.date + " " + l.time);
                 return ts >= shiftStart && ts <= shiftEnd;
             }).forEach(l => {
+                // ... (existing code for daily rows) ...
                 const val = parseFloat(l.amt || l.amount) || 0; 
                 const t = (l.type || "").trim().toUpperCase();
                 let photoHtml = ''; 
@@ -968,9 +993,11 @@ let loyverseLabel = currentReportType === 'daily' ? "Loyverse Daily Profit" : (c
             });
             table.innerHTML = `<thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Verified User</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead><tbody>${bodyHtml}</tbody>`;
         } else {
+            // --- UPDATE THIS SECTION TO SHOW THE CALCULATED BALANCE ---
             let bodyHtml = "";
             tableRows.forEach(row => { 
-                bodyHtml += `<tr><td>${row.date}</td><td>-</td><td>₱${row.sNet.toLocaleString()}</td><td>₱${row.loy.toLocaleString()}</td><td>₱${row.exp.toLocaleString()}</td></tr>`; 
+                // We replaced the "-" with ₱${row.bal.toLocaleString()}
+                bodyHtml += `<tr><td>${row.date}</td><td><b>₱${row.bal.toLocaleString()}</b></td><td>₱${row.sNet.toLocaleString()}</td><td>₱${row.loy.toLocaleString()}</td><td>₱${row.exp.toLocaleString()}</td></tr>`; 
             });
             table.innerHTML = `<thead><tr><th>Date</th><th>Balance Check</th><th>Shift Net</th><th>Loyverse Profit</th><th>Daily Exp</th></tr></thead><tbody>${bodyHtml}</tbody>`;
         }
