@@ -540,7 +540,7 @@
                 type: 'POS_REF', 
                 amt, 
                 chan: 'System', 
-                desc: 'POS Reference Update', 
+                desc: 'Loyverse (Shift Profit) Update', 
                 staff: 'System', 
                 auth_user: loggedInUser.email, 
                 google_name: loggedInUser.user_metadata.full_name, 
@@ -641,7 +641,26 @@
                 const typeRaw = (l.type || "").trim().toUpperCase();
                 let typeChar = typeRaw === "POS_REF" ? "L" : typeRaw[0] || "?";
                 
-                log.innerHTML += `<div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:8px 0;"><div><b>${typeChar}</b> ${l.desc}<br><small style="color:#94a3b8">${l.date} | ${l.time} | ${l.staff} | <b style="color:var(--primary)">${l.chan}</b> | User: ${l.google_name || 'System'}</small></div><div style="text-align:right"><b>₱${val.toLocaleString()}</b><br></div></div>`;
+                // Determine what the sub-text should look like based on transaction type
+                let detailText = `${l.date} | ${l.time}`;
+
+                // Only add Admin Name and Channel if it's NOT a Loyverse update (POS_REF)
+                if (typeRaw !== "POS_REF") {
+                    detailText += ` | ${l.staff} | <b style="color:var(--primary)">${l.chan}</b>`;
+                }
+
+                detailText += ` | User: ${l.google_name || 'System'}`;
+
+                log.innerHTML += `
+                    <div class="channel-row" style="border-bottom:1px solid #f1f5f9; padding:8px 0;">
+                        <div>
+                            <b>${typeChar}</b> ${l.desc}<br>
+                            <small style="color:#94a3b8">${detailText}</small>
+                        </div>
+                        <div style="text-align:right">
+                            <b>₱${val.toLocaleString()}</b><br>
+                        </div>
+                    </div>`;
             });
         }
         if(document.getElementById('report').classList.contains('active')) buildReport();
