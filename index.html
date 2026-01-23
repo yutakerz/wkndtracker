@@ -645,7 +645,7 @@
                 let detailText = `${l.date} | ${l.time}`;
 
                 // Only add Admin Name and Channel if it's NOT a Loyverse update (POS_REF)
-                if (typeRaw !== "POS_REF") {
+                if (typeRaw !== "POS_REF" && typeRaw !== "TRANSFER") {
                     detailText += ` | ${l.staff} | <b style="color:var(--primary)">${l.chan}</b>`;
                 }
 
