@@ -2,8 +2,7 @@
 
 // --- CONFIGURATION ---
 const MAX_LEAVES = 24;
-const ONESIGNAL_APP_ID = "ba0d22f1-127b-468c-9647-877e80574443";
-const ONESIGNAL_API_KEY = "iuzo467ezufmf3mofzow2phnv"; 
+// NOTE: Notification logic is handled by Supabase Edge Function (notify-leaves)
 
 const TEAM_ROSTER = [
     { name: "Annaly Suico", email: "suicoannaly@gmail.com" },
@@ -55,7 +54,7 @@ function renderDashboard() {
     renderHistoryList();
 }
 
-// 3. RENDER TEAM BALANCES (Color & Zero Logic Updated)
+// 3. RENDER TEAM BALANCES
 function renderTeamBalances() {
     const list = document.getElementById('team-balance-list');
     list.innerHTML = '';
@@ -73,7 +72,6 @@ function renderTeamBalances() {
         let remaining = MAX_LEAVES - usedDays;
         if (remaining < 0) remaining = 0;
 
-        // NEW COLOR LOGIC: Green default, Red only if 0
         const balanceColor = remaining === 0 ? '#ff6b6b' : '#4ade80';
 
         const row = document.createElement('div');
@@ -83,16 +81,16 @@ function renderTeamBalances() {
         row.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
         row.style.fontSize = '0.9rem';
         
-row.innerHTML = `
-    <span style="color: #cbd5e1;">${member.name}</span>
-    <span style="color: #cbd5e1; font-weight:700;">
-        leave left: <span style="color: ${balanceColor}">${remaining}</span>
-    </span>`;
+        row.innerHTML = `
+            <span style="color: #cbd5e1;">${member.name}</span>
+            <span style="color: #cbd5e1; font-weight:700;">
+                leave left: <span style="color: ${balanceColor}">${remaining}</span>
+            </span>`;
         list.appendChild(row);
     });
 }
 
-// 4. RENDER HISTORY LIST (Smart Date & Grammar Updated)
+// 4. RENDER HISTORY LIST
 function renderHistoryList() {
     const list = document.getElementById('leave-list');
     list.innerHTML = '';
@@ -114,12 +112,9 @@ function renderHistoryList() {
         else if (endDate < now) { statusBadge = 'DONE'; statusColor = '#22c55e'; } 
         else { statusBadge = 'PENDING'; statusColor = '#f59e0b'; }
 
-        // --- NEW FORMATTING LOGIC ---
         const sDate = new Date(l.start_date).toLocaleDateString();
         const eDate = new Date(l.end_date).toLocaleDateString();
-        // If start == end, show only one date
         const dateDisplay = (sDate === eDate) ? sDate : `${sDate} - ${eDate}`;
-        // Grammar: "Day" vs "Days"
         const dayLabel = l.days_count === 1 ? "Day" : "Days";
 
         const item = document.createElement('div');
@@ -176,9 +171,36 @@ async function submitLeave() {
     if (!start) return notify("Date is required", "⚠️");
     if (!reason) return notify("Reason is required", "⚠️");
     
-    if (!end) end = start; // Handle single day input
+    if (!end) end = start; 
 
     if (new Date(start) > new Date(end)) return notify("Invalid dates", "⚠️");
+
+    // --- CONFLICT CHECKER (NEW) ---
+    // Check if these dates overlap with ANY active leave from ANYONE
+    const reqStart = new Date(start);
+    const reqEnd = new Date(end);
+    // Normalize time to ensure accurate comparison
+    reqStart.setHours(0,0,0,0);
+    reqEnd.setHours(0,0,0,0);
+
+    for (const l of allLeaves) {
+        // Skip cancelled leaves
+        if (l.status === 'cancelled') continue;
+        
+        // Skip the specific leave we are currently editing (don't conflict with self)
+        if (editingLeaveId && l.id === editingLeaveId) continue;
+
+        const lStart = new Date(l.start_date);
+        const lEnd = new Date(l.end_date);
+        lStart.setHours(0,0,0,0);
+        lEnd.setHours(0,0,0,0);
+
+        // Check Overlap: (StartA <= EndB) AND (EndA >= StartB)
+        if (reqStart <= lEnd && reqEnd >= lStart) {
+            return notify("Someone already added on this date.", "⛔");
+        }
+    }
+    // ------------------------------
 
     const daysRequested = calculateBusinessDays(start, end);
     
@@ -196,21 +218,18 @@ async function submitLeave() {
     const oldTxt = btn.innerText; btn.innerText = "Saving..."; btn.disabled = true;
 
     let error = null;
-    const name = loggedInUser.user_metadata.full_name || "A member";
 
     if (editingLeaveId) {
         const { error: err } = await _supabase.from('leaves').update({
             start_date: start, end_date: end, reason: reason, days_count: daysRequested
         }).eq('id', editingLeaveId);
         error = err;
-        if(!error) sendBroadcast(`${name} updated their leave on ${start}.`);
     } else {
         const { error: err } = await _supabase.from('leaves').insert([{
             email: loggedInUser.email, start_date: start, end_date: end,
             reason: reason, days_count: daysRequested, status: 'active'
         }]);
         error = err;
-        if(!error) sendBroadcast(`${name} added a leave on ${start}.`);
     }
 
     btn.innerText = oldTxt; btn.disabled = false;
@@ -234,7 +253,6 @@ function openLeaveDetails(leave) {
     if (leave.status === 'cancelled') statusText = "CANCELLED";
     else if (new Date(leave.end_date) < now) statusText = "DONE";
 
-    // --- APPLY SAME FORMATTING TO DETAILS MODAL ---
     const sDate = new Date(leave.start_date).toLocaleDateString();
     const eDate = new Date(leave.end_date).toLocaleDateString();
     const dateDisplay = (sDate === eDate) ? sDate : `${sDate} - ${eDate}`;
@@ -272,16 +290,11 @@ function openLeaveDetails(leave) {
 
 async function cancelLeave(id) {
     if(!confirm("Are you sure?")) return;
-    const { data: leaveData } = await _supabase.from('leaves').select('*').eq('id', id).single();
     const { error } = await _supabase.from('leaves').update({ status: 'cancelled' }).eq('id', id);
 
     if (!error) {
         document.getElementById('leave-details-modal').style.display = 'none';
         notify("Leave Cancelled", "↩️");
-        if(leaveData) {
-            const name = loggedInUser.user_metadata.full_name || "A member";
-            sendBroadcast(`${name} canceled their leave set on ${leaveData.start_date}.`);
-        }
         fetchAllData();
     } else { notify("Error", "❌"); }
 }
@@ -289,11 +302,4 @@ async function cancelLeave(id) {
 function calculateBusinessDays(start, end) {
     const d1 = new Date(start); const d2 = new Date(end);
     return Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24)) + 1; 
-}
-
-async function sendBroadcast(msg) {
-    if(ONESIGNAL_API_KEY.includes("PASTE")) return;
-    const headers = { "Content-Type": "application/json; charset=utf-8", "Authorization": `Basic ${ONESIGNAL_API_KEY}` };
-    const data = { app_id: ONESIGNAL_APP_ID, contents: { "en": msg }, included_segments: ["All"] };
-    try { await fetch("https://onesignal.com/api/v1/notifications", { method: "POST", headers: headers, body: JSON.stringify(data) }); } catch (e) {}
 }
