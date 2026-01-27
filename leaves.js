@@ -126,8 +126,8 @@ function renderHistoryList() {
         
         item.innerHTML = `
             <div>
-                <b class="adaptive-name" style="font-size:0.9rem;">${ownerName}</b><br>
-                <span style="font-size:0.8rem;">${dateDisplay}</span><br>
+                <b class="adaptive-name" style="font-size:0.85rem;">${ownerName}</b><br>
+                <span style="font-size:0.75rem;">${dateDisplay}</span><br>
                 <small style="color:#64748b">${l.days_count} ${dayLabel} | ${l.reason}</small>
             </div>
             <div style="text-align:right;">

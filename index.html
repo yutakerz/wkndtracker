@@ -212,22 +212,25 @@ input[type="date"] {
         }
 
         #table-label { text-align: center; width: 100%; }
-        /* Update this in your index.html <style> section */
+
+/* ADAPTIVE NAME COLOR LOGIC */
+        /* Default: Force Dark Blue for Light Mode */
         .adaptive-name { 
-            color: #1e293b !important; /* Force dark blue in light mode */
+            color: #1e293b !important; 
             transition: color 0.3s ease;
         }
 
-        /* Ensure the dark mode selector is very specific */
+        /* Trigger: Force White ONLY when Dark Mode is active */
         body.dark .adaptive-name, 
-        body.dark-mode .adaptive-name,
-        body[data-theme="dark"] .adaptive-name { 
-            color: #ffffff !important; /* Force white in dark mode */
+        body.dark-mode .adaptive-name, 
+        body[data-theme="dark"] .adaptive-name,
+        body.dark-theme .adaptive-name { 
+            color: #75a041 !important; 
         }
 
         /* Fallback for system preference */
         @media (prefers-color-scheme: dark) {
-            body:not(.light) .adaptive-name { color: #ffffff; }
+            body:not(.light):not(.light-mode) .adaptive-name { color: #82d668 !important; }
         }
     
     </style>
@@ -418,7 +421,7 @@ input[type="date"] {
     <div class="modal-content" style="max-width: 320px; padding: 15px; height: auto; overflow: hidden; border-radius: 20px;">
         <h3 style="margin-top:0; margin-bottom:8px; font-size: 1.1rem;">Request Leave</h3>
         
-        <p style="font-size:0.65rem; color:#94a3b8; margin:0 0 12px 0; font-style:italic;">
+        <p style="font-size:0.65rem; color:#991b1b; margin:0 0 12px 0; font-style:italic; font-weight:bold;">
             *For 1 day leave, just fill "From"
         </p>
 
