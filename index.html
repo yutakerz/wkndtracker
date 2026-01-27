@@ -406,32 +406,32 @@
 <div id="pwd-modal" class="modal"><div class="modal-content"><h3>Admin Security</h3><p style="font-size:0.8rem; opacity:0.6;">Password Required</p><input type="password" id="p-input" style="text-align:center; margin-bottom:15px;"><div style="display:flex; gap:10px;"><button class="btn" style="background:#f1f5f9; color:#475569" onclick="closePwd()">Cancel</button><button id="p-confirm" class="btn btn-success">Unlock</button></div></div></div>
 
 <div id="add-leave-modal" class="modal">
-    <div class="modal-content" style="max-width: 340px; padding: 20px;">
-        <h3 style="margin-top:0; margin-bottom:10px;">Request Leave</h3>
+    <div class="modal-content" style="max-width: 320px; padding: 15px; height: auto; overflow: hidden; border-radius: 20px;">
+        <h3 style="margin-top:0; margin-bottom:8px; font-size: 1.1rem;">Request Leave</h3>
         
-        <p style="font-size:0.7rem; color:#94a3b8; margin:0 0 15px 0; font-style:italic;">
+        <p style="font-size:0.65rem; color:#94a3b8; margin:0 0 12px 0; font-style:italic;">
             *For 1 day leave, just fill "From"
         </p>
 
-        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <div style="flex: 1; text-align: left;">
-                <label style="font-size:0.75rem; color:#64748b; margin-bottom:4px; display:block;">From</label>
-                <input type="date" id="leave-start" style="width: 100%; padding: 8px; margin:0;">
+                <label style="font-size:0.7rem; color:#64748b; margin-bottom:2px; display:block;">From</label>
+                <input type="date" id="leave-start" style="width: 100%; padding: 6px; font-size: 0.8rem; margin:0; border-radius: 8px;">
             </div>
             <div style="flex: 1; text-align: left;">
-                <label style="font-size:0.75rem; color:#64748b; margin-bottom:4px; display:block;">To</label>
-                <input type="date" id="leave-end" style="width: 100%; padding: 8px; margin:0;">
+                <label style="font-size:0.7rem; color:#64748b; margin-bottom:2px; display:block;">To</label>
+                <input type="date" id="leave-end" style="width: 100%; padding: 6px; font-size: 0.8rem; margin:0; border-radius: 8px;">
             </div>
         </div>
 
-        <div style="text-align: left; margin-bottom: 15px;">
-            <label style="font-size:0.75rem; color:#64748b; margin-bottom:4px; display:block;">Reason</label>
-            <textarea id="leave-reason" rows="2" placeholder="State your reason..." style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:10px; resize:none; font-family:inherit;"></textarea>
+        <div style="text-align: left; margin-bottom: 12px;">
+            <label style="font-size:0.7rem; color:#64748b; margin-bottom:2px; display:block;">Reason</label>
+            <textarea id="leave-reason" rows="2" placeholder="State your reason..." style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:8px; resize:none; font-family:inherit; font-size: 0.85rem;"></textarea>
         </div>
 
-        <div style="display:flex; gap:10px;">
-            <button class="btn" style="background:#f1f5f9; color:#475569; padding: 10px;" onclick="document.getElementById('add-leave-modal').style.display='none'">Cancel</button>
-            <button class="btn btn-primary" style="padding: 10px;" onclick="submitLeave()">Confirm</button>
+        <div style="display:flex; gap:8px;">
+            <button class="btn" style="background:#f1f5f9; color:#475569; padding: 8px; flex: 1; font-size: 0.85rem;" onclick="document.getElementById('add-leave-modal').style.display='none'">Cancel</button>
+            <button class="btn btn-primary" style="padding: 8px; flex: 1; font-size: 0.85rem;" onclick="submitLeave()">Confirm</button>
         </div>
     </div>
 </div>
