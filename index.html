@@ -85,10 +85,11 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
+        /* COMPACT CONTAINER FOR IPHONE */
         .container { 
             padding: 10px; 
             padding-top: calc(15px + env(safe-area-inset-top)); 
-            padding-bottom: 100px; 
+            padding-bottom: 70px; 
             max-width: 1400px; margin: 0 auto; 
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
@@ -133,14 +134,14 @@
         .input-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
         input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; background: #fff; }
         
-        /* PASTE THIS HERE */
-input[type="date"] {
-    -webkit-appearance: none; 
-    min-height: 35px;
-    padding: 6px 8px !important;
-    font-size: 0.85rem !important;
-    background-color: white;
-}
+        /* IOS DATE INPUT FIX */
+        input[type="date"] {
+            -webkit-appearance: none; 
+            min-height: 38px;
+            padding: 6px 10px !important;
+            font-size: 0.9rem !important;
+            background-color: white;
+        }
 
         .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
         .photo-slot { aspect-ratio: 1/1; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; }
@@ -213,24 +214,15 @@ input[type="date"] {
 
         #table-label { text-align: center; width: 100%; }
 
-/* ADAPTIVE NAME COLOR LOGIC */
-        /* Default: Force Dark Blue for Light Mode */
+        /* 1. ADAPTIVE NAME COLOR */
         .adaptive-name { 
-            color: #1e293b !important; 
+            color: #1e293b !important; /* Force Dark Blue for Light Mode */
             transition: color 0.3s ease;
         }
 
-        /* Trigger: Force White ONLY when Dark Mode is active */
-        body.dark .adaptive-name, 
-        body.dark-mode .adaptive-name, 
-        body[data-theme="dark"] .adaptive-name,
-        body.dark-theme .adaptive-name { 
-            color: #75a041 !important; 
-        }
-
-        /* Fallback for system preference */
-        @media (prefers-color-scheme: dark) {
-            body:not(.light):not(.light-mode) .adaptive-name { color: #82d668 !important; }
+        /* Force White only when body has .dark class */
+        body.dark .adaptive-name { 
+            color: #ffffff !important; 
         }
     
     </style>
@@ -290,17 +282,17 @@ input[type="date"] {
                 </div>
 
                 <div class="card">
-                    <h2 style="color: #64748b;">Shift Net (8am Reset)</h2>
+                    <h2 style="color: #64748b;">Shift Income (On hand) - 8AM RESET</h2>
                     <div class="net-total" id="daily-net" style="font-size: 1.6rem; color: var(--success);">₱0.00</div>
                     <div style="margin-bottom: 6px; border-bottom: 1px solid #eee;"></div>
                     <div id="channel-stats-daily"></div>
                 </div>
 
                 <div class="card">
-                    <h2 style="color: #64748b;">Loyverse (Shift Profit)</h2>
-                    <div id="loyverse-display" style="font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; color: #1e293b;">₱0.00</div>
-                    <input type="number" id="loyverse-input" placeholder="New Total" style="padding: 8px;">
-                    <button class="btn btn-primary" id="btn-loyverse" style="font-size: 0.8rem; margin-top: 15px;" onclick="updateLoyverse()">Confirm</button>
+                    <h2 style="color: #64748b;">Loyverse Shift Income - 8AM reset</h2>
+                    <div id="loyverse-display" style="font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; color: #1e293b;">₱0.00</div>
+                    <div style="margin-bottom: 6px; border-bottom: 1px solid #eee;"></div>
+                    <div id="channel-stats-loyverse-net"></div>
                 </div>
 
                 <div class="card">
@@ -318,6 +310,20 @@ input[type="date"] {
             </div>
 
             <div class="main-col">
+                <div class="card">
+                    <h2 style="color: #64748b;">Loyverse (Shift Profit)</h2>
+                    <div class="input-stack">
+                        <input type="number" id="loyverse-input" placeholder="Amount (₱)">
+                        <select id="loyverse-channel">
+                            <option value="Cash">Cash</option>
+                            <option value="GCash">GCash</option>
+                            <option value="Maya">Maya</option>
+                            <option value="BPI">BPI</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="btn-loyverse" style="font-size: 0.8rem; margin-top: 10px;" onclick="updateLoyverse()">Confirm</button>
+                </div>
+
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
                     <div class="card">
                         <h2 style="color: #64748b;">Daily Post Sales (Shift)</h2>
@@ -421,18 +427,18 @@ input[type="date"] {
     <div class="modal-content" style="max-width: 320px; padding: 15px; height: auto; overflow: hidden; border-radius: 20px;">
         <h3 style="margin-top:0; margin-bottom:8px; font-size: 1.1rem;">Request Leave</h3>
         
-        <p style="font-size:0.65rem; color:#991b1b; margin:0 0 12px 0; font-style:italic; font-weight:bold;">
+        <p style="font-size:0.65rem; color:#991b1b; margin:0 0 15px 0; font-style:italic; font-weight:bold; text-align:center;">
             *For 1 day leave, just fill "From"
         </p>
 
         <div style="display: flex; gap: 12px; margin-bottom: 12px; width: 100%;">
             <div style="flex: 1; min-width: 0; text-align: left;">
                 <label style="font-size:0.65rem; color:#64748b; margin-bottom:2px; display:block;">From</label>
-                <input type="date" id="leave-start">
+                <input type="date" id="leave-start" style="width: 100%; border-radius: 8px;">
             </div>
             <div style="flex: 1; min-width: 0; text-align: left;">
                 <label style="font-size:0.65rem; color:#64748b; margin-bottom:2px; display:block;">To</label>
-                <input type="date" id="leave-end">
+                <input type="date" id="leave-end" style="width: 100%; border-radius: 8px;">
             </div>
         </div>
 
@@ -621,10 +627,12 @@ input[type="date"] {
 
     async function updateLoyverse() {
         const amt = parseFloat(document.getElementById('loyverse-input').value);
+        const chan = document.getElementById('loyverse-channel').value; 
+
         if(!amt && amt !== 0) return notify("Enter amount", "⚠️");
 
         document.getElementById('m-title').innerText = "Confirm Loyverse Update";
-        document.getElementById('m-body').innerHTML = `<b>New Total:</b> ₱${amt.toLocaleString()}<br><b>User:</b> ${loggedInUser.user_metadata.full_name}`;
+        document.getElementById('m-body').innerHTML = `<b>New Total:</b> ₱${amt.toLocaleString()}<br><b>Channel:</b> ${chan}<br><b>User:</b> ${loggedInUser.user_metadata.full_name}`;
         document.getElementById('m-imgs').innerHTML = ''; 
         document.getElementById('modal').style.display = 'flex';
 
@@ -638,7 +646,7 @@ input[type="date"] {
             const entry = { 
                 type: 'POS_REF', 
                 amt, 
-                chan: 'System', 
+                chan: chan, 
                 desc: 'Loyverse (Shift Profit) Update', 
                 staff: 'System', 
                 auth_user: loggedInUser.email, 
@@ -702,6 +710,7 @@ input[type="date"] {
 
         let dRev = 0, dPos = 0;
         let chanTotals = { Cash: 0, GCash: 0, Maya: 0, BPI: 0 };
+        let chanTotalsLoyverse = { Cash: 0, GCash: 0, Maya: 0, BPI: 0 };
 
         shiftLogs.forEach(l => {
             const val = parseFloat(l.amt || l.amount) || 0;
@@ -712,13 +721,23 @@ input[type="date"] {
                 dRev += val;
                 if (chanTotals.hasOwnProperty(chan)) chanTotals[chan] += val;
             }
-            if (type === "POS_REF") dPos += val;
+            if (type === "POS_REF") {
+                dPos += val;
+                if (chanTotalsLoyverse.hasOwnProperty(chan)) chanTotalsLoyverse[chan] += val;
+            }
         });
 
         const dailyDiv = document.getElementById('channel-stats-daily'); 
         dailyDiv.innerHTML = '';
         Object.entries(chanTotals).forEach(([c, amt]) => {
             dailyDiv.innerHTML += `<div class="channel-row"><span>${c}</span> <span class="val">₱${amt.toLocaleString()}</span></div>`;
+        });
+
+        // NEW: Render breakdown for Loyverse Net
+        const loyverseNetDiv = document.getElementById('channel-stats-loyverse-net');
+        loyverseNetDiv.innerHTML = '';
+        Object.entries(chanTotalsLoyverse).forEach(([c, amt]) => {
+            loyverseNetDiv.innerHTML += `<div class="channel-row"><span>${c}</span> <span class="val">₱${amt.toLocaleString()}</span></div>`;
         });
 
         document.getElementById('total-net').innerText = "₱"+(tr - te).toLocaleString();
@@ -740,12 +759,15 @@ input[type="date"] {
                 const typeRaw = (l.type || "").trim().toUpperCase();
                 let typeChar = typeRaw === "POS_REF" ? "L" : typeRaw[0] || "?";
                 
-                // Determine what the sub-text should look like based on transaction type
                 let detailText = `${l.date} | ${l.time}`;
 
-                // Only add Admin Name and Channel if it's NOT a Loyverse update (POS_REF)
                 if (typeRaw !== "POS_REF" && typeRaw !== "TRANSFER") {
                     detailText += ` | ${l.staff} | <b style="color:var(--primary)">${l.chan}</b>`;
+                }
+                
+                // Show channel for Loyverse transactions in log now too
+                if (typeRaw === "POS_REF") {
+                     detailText += ` | <b style="color:var(--primary)">${l.chan}</b>`;
                 }
 
                 detailText += ` | User: ${l.google_name || 'System'}`;
@@ -1141,4 +1163,3 @@ input[type="date"] {
 </body>
 
 </html>
-
