@@ -137,7 +137,7 @@ function openAddLeaveModal() {
     document.getElementById('leave-reason').value = '';
     
     const btn = document.querySelector('#add-leave-modal .btn-primary');
-    btn.innerText = "Confirm Request";
+    btn.innerText = "Confirm";
     document.getElementById('add-leave-modal').style.display = 'flex';
 }
 
@@ -197,7 +197,7 @@ async function submitLeave() {
 
     if (!res.error) {
         document.getElementById('add-leave-modal').style.display = 'none';
-        notify(editingLeaveId ? "Updated!" : "Requested!", "📅");
+        notify(editingLeaveId ? "Updated!" : "Added!", "📅");
         fetchAllData();
     } else notify("Error saving", "❌");
 }
