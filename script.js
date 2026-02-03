@@ -7,6 +7,14 @@ OneSignalDeferred.push(async function(OneSignal) {
     console.log("OneSignal Initialized");
 });
 
+// --- PRIVACY: LIST OF EMAILS ALLOWED TO SEE EVERYTHING ---
+const PRIVILEGED_EMAILS = [
+    "suicoannaly@gmail.com",
+    "cyrilbolico23@gmail.com",
+    "kentgabitoya17@gmail.com",
+    "onlymrsarmiento@gmail.com"
+];
+
 // Main App Logic
 const S_URL = "https://jhoftcoroyjusugewowb.supabase.co"; 
 const S_KEY = "sb_publishable_VzAlTOn_of3qNk4KWcK77A_Gj1dyBU7";
@@ -78,19 +86,55 @@ async function loginWithGoogle() {
 }
 
 async function checkUser() {
-    const { data: { user } } = await _supabase.auth.getUser();
-    if (user) {
-        loggedInUser = user;
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(function(OneSignal) {
-            OneSignal.User.addTag("email", user.email);
-        });
-        document.getElementById('login-page').style.display = 'none';
-        document.getElementById('main-nav').style.display = 'flex';
-        document.getElementById('app-content').style.display = 'block';
-        await fetchCloudData();
-        setupRealtime();
-    } else {
+    // Safety Timeout
+    setTimeout(() => {
+        const splash = document.getElementById('splash');
+        if (splash && splash.style.display !== 'none') {
+            splash.style.opacity = '0';
+            setTimeout(() => splash.style.display = 'none', 500);
+        }
+    }, 5000);
+
+    try {
+        const { data: { user } } = await _supabase.auth.getUser();
+        if (user) {
+            loggedInUser = user;
+            
+            // --- PRIVACY CHECK ---
+            // If the user is NOT in the privileged list, hide the sensitive elements
+            if (!PRIVILEGED_EMAILS.includes(user.email)) {
+                // 1. Hide "Overall Balance" Card (First dark card in dashboard side col)
+                const balanceCard = document.querySelector('#dashboard .side-col .card.dark-card');
+                if (balanceCard) balanceCard.style.display = 'none';
+
+                // 2. Hide Report Navigation Links (Day, Week, Month)
+                // Indexes: 0=Home, 1=Day, 2=Week, 3=Month, 4=Menu
+                const navLinks = document.querySelectorAll('.nav-links span');
+                if (navLinks.length >= 4) {
+                    navLinks[1].style.display = 'none'; // Day
+                    navLinks[2].style.display = 'none'; // Week
+                    navLinks[3].style.display = 'none'; // Month
+                }
+                
+                // Optional: Shrink nav bar to fit just Home & Menu
+                const nav = document.querySelector('nav');
+                if(nav) nav.style.minWidth = 'auto';
+            }
+
+            window.OneSignalDeferred = window.OneSignalDeferred || [];
+            OneSignalDeferred.push(function(OneSignal) {
+                OneSignal.User.addTag("email", user.email);
+            });
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('main-nav').style.display = 'flex';
+            document.getElementById('app-content').style.display = 'block';
+            await fetchCloudData();
+            setupRealtime();
+        } else {
+            document.getElementById('splash').style.display = 'none';
+        }
+    } catch (e) {
+        console.error(e);
         document.getElementById('splash').style.display = 'none';
     }
 }
@@ -346,16 +390,13 @@ function switchView(id, el) {
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         const target = id === 'dashboard' ? 'dashboard' : (id === 'leaves' ? 'leaves' : 'report');
         document.getElementById(target).classList.add('active'); 
-        if(el) el.classList.add('active'); // 'el' check added in case called programmatically
+        if(el) el.classList.add('active'); 
         
         if(id !== 'dashboard' && id !== 'leaves') { 
             currentReportType = id.toLowerCase(); 
             setupFilterUI(currentReportType); 
         }
-        
-        // SCROLL TO TOP FIX (Since container now handles scroll)
         container.scrollTop = 0;
-
         container.style.opacity = '1'; container.style.transform = 'translateY(0)';
     }, 300);
 }
@@ -381,17 +422,11 @@ async function setupFilterUI(type) {
     const startIn = document.getElementById('filter-date-start');
     const endIn = document.getElementById('filter-date-end');
 
-    // FIXED: USE PST TIME FOR DEFAULT DATE TO AVOID JAN 17 ISSUE
     const pstNow = await getPSTTime();
     const year = pstNow.getFullYear();
     const month = String(pstNow.getMonth() + 1).padStart(2, '0');
     const day = String(pstNow.getDate()).padStart(2, '0');
-
-    const yearShift = pstNow.getFullYear();
-    const monthShift = String(pstNow.getMonth() + 1).padStart(2, '0');
-    const dayShift = String(pstNow.getDate()).padStart(2, '0');
-    const todayPST = `${yearShift}-${monthShift}-${dayShift}`;
-
+    const todayPST = `${year}-${month}-${day}`;
 
     dIn.style.display = "none"; 
     mIn.style.display = "none";
@@ -414,7 +449,6 @@ async function setupFilterUI(type) {
         dIn.style.display="block"; 
         dIn.value = todayPST;
     }
-    
     document.getElementById('table-label').innerText = labelText; 
     buildReport();
 }
@@ -423,54 +457,34 @@ function updateReportFilter() { buildReport(); }
 
 function buildReport() {
     const table = document.getElementById('main-table'); 
-    let sRev = 0, sExp = 0, tPos = 0; 
-    let cumTr = 0, cumTe = 0; 
+    let cumTr = 0, cumTe = 0, rows = []; 
     
     const dVal = document.getElementById('filter-date').value; 
-    const startVal = document.getElementById('filter-date-start').value; 
-    const endVal = document.getElementById('filter-date-end').value; 
+    const sVal = document.getElementById('filter-date-start').value; 
+    const eVal = document.getElementById('filter-date-end').value; 
     const mVal = document.getElementById('filter-month').value;
 
     let shiftStart, shiftEnd;
 
     if (currentReportType === 'daily') {
-        let selectedDate = new Date(dVal);
-        const now = new Date(); 
-        const isSameDay = selectedDate.toDateString() === now.toDateString();
-
-        if (isSameDay && now.getHours() < 8) {
-            selectedDate.setDate(selectedDate.getDate() - 1);
-        }
-
-        const y = selectedDate.getFullYear();
-        const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
-        const d = String(selectedDate.getDate()).padStart(2, '0');
-        
-        shiftStart = new Date(`${y}-${m}-${d}T08:00:00`);
-        shiftEnd = new Date(shiftStart.getTime() + (24 * 60 * 60 * 1000) - 1);
+        let d = new Date(dVal); const n = new Date(); 
+        if (d.toDateString() === n.toDateString() && n.getHours() < 8) d.setDate(d.getDate() - 1);
+        sStart = new Date(d); sStart.setHours(8, 0, 0, 0); sEnd = new Date(sStart); sEnd.setDate(sEnd.getDate() + 1); sEnd.setHours(7, 59, 59, 999);
     } 
     else if (currentReportType === 'weekly') {
-        shiftStart = new Date(startVal);
-        shiftStart.setHours(8, 0, 0, 0);
-        
-        shiftEnd = new Date(endVal);
-        shiftEnd.setDate(shiftEnd.getDate() + 1);
-        shiftEnd.setHours(7, 59, 59, 999);
+        sStart = new Date(sVal); sStart.setHours(8, 0, 0, 0); 
+        sEnd = new Date(eVal); sEnd.setDate(sEnd.getDate() + 1); sEnd.setHours(7, 59, 59, 999);
     } 
-    else if (currentReportType === 'monthly') {
-        const [year, month] = mVal.split('-');
-        shiftStart = new Date(year, month - 1, 1, 8, 0, 0);
-        shiftEnd = new Date(year, month, 1, 7, 59, 59, 999);
+    else {
+        const [y, m] = mVal.split('-'); sStart = new Date(y, m - 1, 1, 8, 0, 0); sEnd = new Date(y, m, 1, 7, 59, 59, 999);
     }
 
-    let balanceBeforeReport = 0;
+    let sRev = 0, sExp = 0, tPos = 0; 
     let repChansOverall = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
     let repChansShift = { Cash:0, GCash:0, Maya:0, BPI:0 }; 
     let repChansExp = { Cash:0, GCash:0, Maya:0, BPI:0 };
-    
-    // 1. ADDED: Container for Loyverse Channels
+    // Container for Loyverse Channels
     let repChansLoy = { Cash:0, GCash:0, Maya:0, BPI:0 };
-    
     let aggData = {}; 
 
     db.logs.forEach(l => {
@@ -480,16 +494,9 @@ function buildReport() {
         const entryTimestamp = new Date(l.date + " " + l.time);
 
         let rDate = new Date(entryTimestamp);
-        if (rDate.getHours() < 8) {
-            rDate.setDate(rDate.getDate() - 1);
-        }
+        if (rDate.getHours() < 8) rDate.setDate(rDate.getDate() - 1);
+        const gd = `${rDate.getFullYear()}-${String(rDate.getMonth() + 1).padStart(2, '0')}-${String(rDate.getDate()).padStart(2, '0')}`;
 
-        const y = rDate.getFullYear();
-        const m = String(rDate.getMonth() + 1).padStart(2, '0');
-        const d = String(rDate.getDate()).padStart(2, '0');
-        const groupDate = `${y}-${m}-${d}`;
-
-        // CUMULATIVE CALCULATION
         if (entryTimestamp <= shiftEnd) {
             if (t === "REVENUE") {
                 cumTr += val;
@@ -505,48 +512,34 @@ function buildReport() {
             }
         }
 
-        // PERIOD AGGREGATION
-        let inRange = entryTimestamp >= shiftStart && entryTimestamp <= shiftEnd;
-        if(inRange) {
-            if(t === "REVENUE") { 
+        if (entryTimestamp >= shiftStart && entryTimestamp <= shiftEnd) {
+            if (t === "REVENUE") { 
                 sRev += val; 
-                if(repChansShift.hasOwnProperty(c)) repChansShift[c] += val; 
+                if (repChansShift.hasOwnProperty(c)) repChansShift[c] += val; 
             }
             else if (t === "EXPENSE") {
                 sExp += val; 
-                if(repChansExp.hasOwnProperty(c)) {
-                    repChansExp[c] += val; 
-                }
+                if (repChansExp.hasOwnProperty(c)) repChansExp[c] += val; 
             }
             else if (t === "POS_REF") { 
                 tPos += val;
-                // 2. ADDED: Populate Loyverse Channels
-                if(repChansLoy.hasOwnProperty(c)) {
-                    repChansLoy[c] += val;
-                }
+                // Populate Loyverse Channels
+                if (repChansLoy.hasOwnProperty(c)) repChansLoy[c] += val;
             }
 
             if (currentReportType !== 'daily' && t !== 'TRANSFER') {
-                if (!aggData[groupDate]) aggData[groupDate] = { date: groupDate, net: 0, sNet: 0, loy: 0, exp: 0 };
-                if (t === "REVENUE") { aggData[groupDate].sNet += val; aggData[groupDate].net += val; }
-                if (t === "EXPENSE") { aggData[groupDate].exp += val; aggData[groupDate].net -= val; }
-                if (t === "POS_REF") { aggData[groupDate].loy += val; }
+                if (!aggData[gd]) aggData[gd] = { date: gd, net: 0, sNet: 0, loy: 0, exp: 0 };
+                if (t === "REVENUE") { aggData[gd].sNet += val; aggData[gd].net += val; }
+                if (t === "EXPENSE") { aggData[gd].exp += val; aggData[gd].net -= val; }
+                if (t === "POS_REF") { aggData[gd].loy += val; }
             }
         }
     });
 
     let currentBal = (cumTr - cumTe); 
-    let tableRows = [];
-    
     Object.keys(aggData).sort().reverse().forEach(dateKey => {
         let day = aggData[dateKey];
-        tableRows.push({
-            date: day.date,
-            bal: currentBal, 
-            sNet: day.sNet,
-            loy: day.loy,
-            exp: day.exp
-        });
+        rows.push({ date: day.date, bal: currentBal, sNet: day.sNet, loy: day.loy, exp: day.exp });
         currentBal -= day.net;
     });
 
@@ -556,30 +549,22 @@ function buildReport() {
     
     let overallChanHtml = ''; for(let [k,v] of Object.entries(repChansOverall)) { overallChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
     let shiftChanHtml = ''; for(let [k,v] of Object.entries(repChansShift)) { shiftChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
-
-    let expChanHtml = ''; 
-    ['Cash', 'GCash', 'Maya', 'BPI'].forEach(k => {
-        const v = repChansExp[k] || 0;
-        expChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`;
-    });
-
-    // 3. ADDED: Generate Loyverse HTML Loop
-    let loyChanHtml = ''; 
-    ['Cash', 'GCash', 'Maya', 'BPI'].forEach(k => {
-        const v = repChansLoy[k] || 0;
-        loyChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`;
-    });
+    let expChanHtml = ''; for(let [k,v] of Object.entries(repChansExp)) { expChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
     
-    // 4. ADDED: Inserted ${loyChanHtml} into the 3rd card
+    // Generate Loyverse HTML
+    let loyChanHtml = ''; for(let [k,v] of Object.entries(repChansLoy)) { loyChanHtml += `<div class="channel-row"><span>${k}</span> <span class="val">₱${v.toLocaleString()}</span></div>`; }
+
     document.getElementById('rep-cards').innerHTML = `
         <div class="card"><h2 style="color:#64748b">${balanceLabel}</h2><div class="net-total" style="color:#1e293b; font-size: 1.6rem;">₱${(cumTr - cumTe).toLocaleString()}</div><div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:8px;"><span>Rev: <b style="color:var(--success)">₱${cumTr.toLocaleString()}</b></span><span>Exp: <b style="color:var(--danger)">₱${cumTe.toLocaleString()}</b></span></div>${overallChanHtml}</div>
         <div class="card"><h2 style="color: #64748b;">Shift Net</h2><div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div><div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>${shiftChanHtml}</div>
+        
         <div class="card">
             <h2 style="color: #64748b;">${loyverseLabel}</h2>
-            <div style="font-size:1.6rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div>
+            <div class="net-total" style="font-size:1.6rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div>
             <div style="margin-bottom: 8px; border-bottom: 1px solid #eee; margin-top: 8px;"></div>
             ${loyChanHtml}
         </div>
+        
         <div class="card">
             <h2 style="color: #64748b;">${expenseLabel}</h2>
             <div class="net-total" style="font-size:1.6rem; font-weight:800; color:var(--danger);">₱${sExp.toLocaleString()}</div>
@@ -608,7 +593,7 @@ function buildReport() {
         table.innerHTML = `<thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Verified User</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead><tbody>${bodyHtml}</tbody>`;
     } else {
         let bodyHtml = "";
-        tableRows.forEach(row => { 
+        rows.forEach(row => { 
             bodyHtml += `<tr><td>${row.date}</td><td><b>₱${row.bal.toLocaleString()}</b></td><td>₱${row.sNet.toLocaleString()}</td><td>₱${row.loy.toLocaleString()}</td><td>₱${row.exp.toLocaleString()}</td></tr>`; 
         });
         table.innerHTML = `<thead><tr><th>Date</th><th>Balance Check</th><th>Shift Net</th><th>Loyverse Profit</th><th>Daily Exp</th></tr></thead><tbody>${bodyHtml}</tbody>`;
