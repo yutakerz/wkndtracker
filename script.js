@@ -7,6 +7,14 @@ OneSignalDeferred.push(async function(OneSignal) {
     console.log("OneSignal Initialized");
 });
 
+// --- PRIVACY: LIST OF EMAILS ALLOWED TO SEE EVERYTHING ---
+const PRIVILEGED_EMAILS = [
+    "suicoannaly@gmail.com",
+    "cyrilbolico23@gmail.com",
+    "kentgabitoya17@gmail.com",
+    "onlymrsarmiento@gmail.com"
+];
+
 // Main App Logic
 const S_URL = "https://jhoftcoroyjusugewowb.supabase.co"; 
 const S_KEY = "sb_publishable_VzAlTOn_of3qNk4KWcK77A_Gj1dyBU7";
@@ -81,6 +89,25 @@ async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
     if (user) {
         loggedInUser = user;
+        // 2. ADD THIS INSIDE checkUser(), right after 'loggedInUser = user;'
+        if (!PRIVILEGED_EMAILS.includes(user.email)) {
+            // Hide Overall Balance Card
+            const balanceCard = document.querySelector('#dashboard .side-col .card.dark-card');
+            if (balanceCard) balanceCard.style.display = 'none';
+
+            // Hide Report Navigation Links (Day, Week, Month)
+            // Nav Indices: 0=Home, 1=Day, 2=Week, 3=Month, 4=Menu
+            const navLinks = document.querySelectorAll('.nav-links span');
+            if (navLinks.length >= 4) {
+                navLinks[1].style.display = 'none'; // Day
+                navLinks[2].style.display = 'none'; // Week
+                navLinks[3].style.display = 'none'; // Month
+            }
+            
+            // Optional: Adjust nav width so it doesn't look empty
+            const nav = document.querySelector('nav');
+            if(nav) nav.style.minWidth = 'auto';
+        }
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         OneSignalDeferred.push(function(OneSignal) {
             OneSignal.User.addTag("email", user.email);
