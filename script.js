@@ -182,7 +182,7 @@ async function updateLoyverse() {
             amt, 
             chan: chan, 
             desc: 'Loyverse (Shift Profit) Update', 
-            staff: 'System', 
+            staff: loggedInUser.user_metadata.full_name, 
             auth_user: loggedInUser.email, 
             google_name: loggedInUser.user_metadata.full_name, 
             time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), 
@@ -298,7 +298,7 @@ async function confirmTransfer() {
     document.getElementById('m-confirm').onclick = async () => {
         const mConfirm = document.getElementById('m-confirm');
         const oldTxt = mConfirm.innerText; mConfirm.innerText = "Processing..."; mConfirm.disabled = true;
-        const entry = { type: 'TRANSFER', amt, chan: from, desc: `Transfer from ${from} to ${to}`, staff: 'System', auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
+        const entry = { type: 'TRANSFER', amt, chan: from, desc: `Transfer from ${from} to ${to}`, staff: loggedInUser.user_metadata.full_name, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
         const { error } = await _supabase.from('transactions').insert([entry]);
         mConfirm.innerText = oldTxt; mConfirm.disabled = false;
         if (!error) { 
