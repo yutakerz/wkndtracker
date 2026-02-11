@@ -1,17 +1,35 @@
 // leaves.js
 
 // --- CONFIGURATION ---
-const MAX_LEAVES = 24;
+const LIMIT_ADMIN = 24;
+const LIMIT_EMPLOYEE = 12;
+
+// The 4 Original Admins
+const ADMIN_EMAILS = [
+    "suicoannaly@gmail.com",
+    "cyrilbolico23@gmail.com",
+    "kentgabitoya17@gmail.com",
+    "onlymrsarmiento@gmail.com"
+];
 
 const TEAM_ROSTER = [
-    { name: "Annaly Suico", email: "suicoannaly@gmail.com" },
-    { name: "Cyril Bolico", email: "cyrilbolico23@gmail.com" },
-    { name: "Kent Gabitoya", email: "kentgabitoya17@gmail.com" },
-    { name: "Renz Sarmiento", email: "onlymrsarmiento@gmail.com" }
+    { name: "Anna", email: "suicoannaly@gmail.com" },
+    { name: "Cee", email: "cyrilbolico23@gmail.com" },
+    { name: "Ian", email: "kentgabitoya17@gmail.com" },
+    { name: "Renz", email: "onlymrsarmiento@gmail.com" },
+    // ADD NEW EMPLOYEES HERE:
+    { name: "Carryl", email: "carrylpolancos5@gmail.com" },
+    { name: "Chariz", email: "cksiasongrados@gmail.com" },
+    { name: "Jerome", email: "jeromeferdsaguilar@gmail.com" }
 ];
 
 let allLeaves = [];
 let editingLeaveId = null; 
+
+// Helper: Check if user is Admin or Employee to get their specific limit
+function getLimit(email) {
+    return ADMIN_EMAILS.includes(email) ? LIMIT_ADMIN : LIMIT_EMPLOYEE;
+}
 
 // 1. OPEN THE PAGE
 function openLeaves() {
@@ -62,7 +80,9 @@ function renderTeamBalances() {
             }
         });
 
-        let remaining = Math.max(0, MAX_LEAVES - usedDays);
+        // Use helper to determine if this person has 12 or 24 limit
+        const userLimit = getLimit(member.email);
+        let remaining = Math.max(0, userLimit - usedDays);
         const balanceColor = remaining === 0 ? '#ff6b6b' : '#4ade80';
 
         const row = document.createElement('div');
@@ -182,7 +202,9 @@ async function submitLeave() {
         }
     });
     
-    if ((used + daysRequested) > MAX_LEAVES) return notify(`Insufficient balance!`, "⛔");
+    // Check specific limit for the logged in user (12 or 24)
+    const myLimit = getLimit(loggedInUser.email);
+    if ((used + daysRequested) > myLimit) return notify(`Insufficient balance! (Max ${myLimit})`, "⛔");
 
     const btn = document.querySelector('#add-leave-modal .btn-primary');
     const oldTxt = btn.innerText; btn.innerText = "Saving..."; btn.disabled = true;
