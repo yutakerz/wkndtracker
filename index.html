@@ -162,21 +162,26 @@
             <h1 id="rep-title" style="margin:0">Reports</h1>
             <button class="btn btn-primary" id="btn-print" style="width:auto; padding:10px 30px;" onclick="window.print()">Print PDF</button>
         </div>
-        <div class="filter-section">
-            <label id="filter-label" style="font-weight: bold; font-size: 0.9rem;"></label>
-            
-            <input type="date" id="filter-date" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
-            
+            <div class="filter-section" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                <label id="filter-label" style="font-weight: bold; font-size: 0.9rem;"></label>
+                
+                <input type="date" id="filter-date" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
 
-            <div id="week-range-container" style="display:none; align-items:center; gap:5px;">
-                <span style="font-size: 0.8rem; color: #94a3b8;">from</span>
-                <input type="date" id="filter-date-start" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
-                <span style="font-size: 0.8rem; color: #94a3b8;">to</span>
-                <input type="date" id="filter-date-end" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
+                <div id="week-range-container" style="display:none; align-items:center; gap:5px;">
+                    <span style="font-size: 0.8rem; color: #94a3b8;">from</span>
+                    <input type="date" id="filter-date-start" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
+                    <span style="font-size: 0.8rem; color: #94a3b8;">to</span>
+                    <input type="date" id="filter-date-end" style="width: auto; margin-bottom: 0;" onchange="updateReportFilter()">
+                </div>
+
+                <input type="month" id="filter-month" style="width: auto; margin-bottom: 0; display: none;" onchange="updateReportFilter()">
+
+<div style="margin-left: auto; min-width: 200px;">
+    <input type="text" id="report-search" placeholder="🔍 Search All Records..." 
+           style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.85rem;" 
+           oninput="globalSearch()">
+</div>
             </div>
-
-            <input type="month" id="filter-month" style="width: auto; margin-bottom: 0; display: none;" onchange="updateReportFilter()">
-        </div>
         
         <div id="rep-cards" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:10px; margin-bottom:20px;"></div>
         

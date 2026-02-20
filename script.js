@@ -446,6 +446,60 @@ async function setupFilterUI(type) {
     buildReport();
 }
 
+async function globalSearch() {
+    const keyword = document.getElementById('report-search').value.toLowerCase();
+    const table = document.getElementById('main-table');
+    const cards = document.getElementById('rep-cards');
+
+    // If search is empty, go back to the normal report view
+    if (!keyword) {
+        cards.style.display = "grid";
+        buildReport();
+        return;
+    }
+
+    // Hide the summary cards during search to focus on table results
+    cards.style.display = "none";
+    document.getElementById('table-label').innerText = `Search Results for: "${keyword}"`;
+
+    let bodyHtml = "";
+    const isPrivileged = PRIVILEGED_EMAILS.includes(loggedInUser.email);
+
+    // Filter through EVERY log in the database
+    const results = db.logs.filter(l => {
+        // 1. Privacy Check: Employees only search their own records
+        const creator = l.auth_user || l.email;
+        if (!isPrivileged && creator !== loggedInUser.email) return false;
+
+        // 2. Keyword Check: Look in Staff, Description, Channel, and Date
+        const searchString = `${l.staff} ${l.desc} ${l.chan} ${l.date} ${l.type} ${l.google_name}`.toLowerCase();
+        return searchString.includes(keyword);
+    });
+
+    // Render the search results in the Daily format (detailed)
+    results.forEach(l => {
+        const val = parseFloat(l.amt || l.amount) || 0; 
+        const t = (l.type || "").trim().toUpperCase();
+        
+        // Handle photo lightboxes
+        let photoHtml = ''; 
+        if(l.photos && Array.isArray(l.photos)) { 
+            const photosJson = JSON.stringify(l.photos).replace(/"/g, '&quot;'); 
+            l.photos.forEach((p, idx) => { 
+                if(p) photoHtml += `<img src="${p}" style="width:30px;height:30px;object-fit:cover;margin-right:2px;border-radius:3px;border:1px solid #ddd;cursor:pointer;" onclick="openLightbox(${photosJson}, ${idx})">`; 
+            }); 
+        }
+
+        const inAmt = (t === "REVENUE" || t === "TRANSFER") ? '₱'+val.toLocaleString() : '-';
+        const outAmt = (t === "EXPENSE" || t === "TRANSFER" || t === "POS_REF") ? '₱'+val.toLocaleString() : '-';
+        const typeLabel = t === 'POS_REF' ? 'L' : (t === 'REVENUE' ? 'R' : (t === 'EXPENSE' ? 'E' : 'T'));
+
+        bodyHtml += `<tr><td>${l.date}<br><small>${l.time}</small></td><td><b>${typeLabel}</b></td><td>${l.staff}</td><td><small>${l.google_name || 'System'}</small></td><td>${l.desc}</td><td>${l.chan}</td><td>${inAmt}</td><td>${outAmt}</td><td>${photoHtml}</td></tr>`;
+    });
+
+    table.innerHTML = `<thead><tr><th>Date & Time</th><th>Type</th><th>Admin</th><th>Verified User</th><th>Details</th><th>Chan</th><th>In</th><th>Out</th><th>Pics</th></tr></thead><tbody>${bodyHtml}</tbody>`;
+}
+
 function updateReportFilter() { buildReport(); }
 
 function buildReport() {
