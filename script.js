@@ -405,41 +405,40 @@ async function setupFilterUI(type) {
     const dIn = document.getElementById('filter-date'); 
     const mIn = document.getElementById('filter-month'); 
     const weekContainer = document.getElementById('week-range-container');
-    const startIn = document.getElementById('filter-date-start');
-    const endIn = document.getElementById('filter-date-end');
+    const searchContainer = document.getElementById('search-container'); // NEW
 
-    // FIXED: USE PST TIME FOR DEFAULT DATE TO AVOID JAN 17 ISSUE
     const pstNow = await getPSTTime();
-    const year = pstNow.getFullYear();
-    const month = String(pstNow.getMonth() + 1).padStart(2, '0');
-    const day = String(pstNow.getDate()).padStart(2, '0');
+    const todayPST = pstNow.toISOString().split('T')[0];
 
-    const yearShift = pstNow.getFullYear();
-    const monthShift = String(pstNow.getMonth() + 1).padStart(2, '0');
-    const dayShift = String(pstNow.getDate()).padStart(2, '0');
-    const todayPST = `${yearShift}-${monthShift}-${dayShift}`;
-
-
+    // 1. Hide everything by default
     dIn.style.display = "none"; 
     mIn.style.display = "none";
     weekContainer.style.display = "none";
+    searchContainer.style.display = "none"; // Hide search box
     
+    // 2. Clear any existing search to keep the UI clean when switching tabs
+    document.getElementById('report-search').value = '';
+    document.getElementById('rep-cards').style.display = 'grid';
+
     let labelText = "Daily Transaction";
     
     if(type === 'monthly') { 
         labelText = "Monthly Transaction"; 
-        mIn.style.display="block"; 
+        mIn.style.display = "block"; 
         mIn.value = todayPST.substring(0,7); 
     } 
     else if (type === 'weekly') { 
         labelText = "Weekly Transaction"; 
-        weekContainer.style.display="flex"; 
-        startIn.value = todayPST;
-        endIn.value = todayPST;
+        weekContainer.style.display = "flex"; 
     }
     else { 
-        dIn.style.display="block"; 
+        // THIS IS THE DAILY SECTION
+        labelText = "Daily Transaction";
+        dIn.style.display = "block"; 
         dIn.value = todayPST;
+        
+        // ONLY SHOW SEARCH HERE
+        searchContainer.style.display = "block"; 
     }
     
     document.getElementById('table-label').innerText = labelText; 
