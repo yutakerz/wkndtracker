@@ -117,12 +117,21 @@ function renderHistoryList() {
 
         let statusBadge = '', statusColor = '#94a3b8'; 
         const now = new Date(); now.setHours(0,0,0,0);
-        const startDate = new Date(l.start_date);
-        const endDate = new Date(l.end_date);
+        const startDate = new Date(l.start_date); startDate.setHours(0,0,0,0);
+        const endDate = new Date(l.end_date); endDate.setHours(0,0,0,0);
 
-        if (l.status === 'cancelled') { statusBadge = 'CANCELLED'; statusColor = '#ef4444'; } 
-        else if (endDate < now) { statusBadge = 'DONE'; statusColor = '#22c55e'; } 
-        else { statusBadge = 'PENDING'; statusColor = '#f59e0b'; }
+        if (l.status === 'cancelled') { 
+            statusBadge = 'CANCELLED'; statusColor = '#ef4444'; 
+        } 
+        else if (now >= startDate && now <= endDate) { 
+            statusBadge = 'ON GOING'; statusColor = '#3b82f6'; // Blue
+        }
+        else if (endDate < now) { 
+            statusBadge = 'DONE'; statusColor = '#22c55e'; 
+        } 
+        else { 
+            statusBadge = 'PENDING'; statusColor = '#f59e0b'; 
+        }
 
         const sStr = startDate.toLocaleDateString();
         const eStr = endDate.toLocaleDateString();
@@ -231,28 +240,43 @@ function openLeaveDetails(leave) {
     const title = document.getElementById('manage-leave-title');
     
     const now = new Date(); now.setHours(0,0,0,0);
-    const startDate = new Date(leave.start_date);
-    const endDate = new Date(leave.end_date);
+    const startDate = new Date(leave.start_date); startDate.setHours(0,0,0,0);
+    const endDate = new Date(leave.end_date); endDate.setHours(0,0,0,0);
     
     const owner = TEAM_ROSTER.find(u => u.email === leave.email);
     const ownerName = owner ? owner.name : leave.email;
 
     let statusText = "PENDING";
-    if (leave.status === 'cancelled') statusText = "CANCELLED";
-    else if (endDate < now) statusText = "DONE";
+    let statusColor = '#f59e0b';
+    if (leave.status === 'cancelled') {
+        statusText = "CANCELLED";
+        statusColor = '#ef4444';
+    } else if (now >= startDate && now <= endDate) {
+        statusText = "ON GOING";
+        statusColor = '#3b82f6';
+    } else if (endDate < now) {
+        statusText = "DONE";
+        statusColor = '#22c55e';
+    }
 
     const sStr = startDate.toLocaleDateString();
     const eStr = endDate.toLocaleDateString();
     const dateDisplay = (sStr === eStr) ? sStr : `${sStr} - ${eStr}`;
     const dayLabel = leave.days_count === 1 ? "Day" : "Days";
 
+    // Format created_at date
+    const createdDate = new Date(leave.created_at);
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
+    const formattedCreatedDate = createdDate.toLocaleString('en-US', options).replace(' at ', ', ');
+
     content.innerHTML = `
         <div style="margin-bottom:10px; border-bottom:1px solid rgba(0,0,0,0.05); padding-bottom:8px;">
             <b class="adaptive-name" style="font-size:1rem;">${ownerName}</b>
         </div>
-        <div style="margin-bottom:6px"><b>Date:</b> ${dateDisplay}</div>
+        <div style="margin-bottom:6px"><b>Date of Leave:</b> ${dateDisplay}</div>
         <div style="margin-bottom:6px"><b>Duration:</b> ${leave.days_count} ${dayLabel}</div>
-        <div style="margin-bottom:6px"><b>Status:</b> ${statusText}</div>
+        <div style="margin-bottom:6px"><b>Status:</b> <span style="color:${statusColor}; font-weight:bold;">${statusText}</span></div>
+        <div style="margin-bottom:6px"><b>Date added:</b> ${formattedCreatedDate}</div>
         <div><b>Reason:</b><br><span style="color:#64748b; font-size:0.85rem;">${leave.reason}</span></div>`;
 
     actions.innerHTML = '';
