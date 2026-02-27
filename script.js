@@ -652,12 +652,12 @@ function buildReport() {
     
 // Update the HTML generation for the cards
     document.getElementById('rep-cards').innerHTML = `
-        <div class="card"><h2 style="color:#64748b">${balanceLabel}</h2><div class="net-total" style="color:#1e293b; font-size: 1.6rem;">₱${(cumTr - cumTe).toLocaleString()}</div><div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:8px;"><span>Rev: <b style="color:var(--success)">₱${cumTr.toLocaleString()}</b></span><span>Exp: <b style="color:var(--danger)">₱${cumTe.toLocaleString()}</b></span></div>${overallChanHtml}</div>
+        <div class="card"><h2 style="color:#64748b">${balanceLabel}</h2><div class="net-total adaptive-total" style="font-size: 1.6rem;">₱${(cumTr - cumTe).toLocaleString()}</div><div style="display:flex; justify-content: space-between; font-size: 0.65rem; color:#94a3b8; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:8px;"><span>Rev: <b style="color:var(--success)">₱${cumTr.toLocaleString()}</b></span><span>Exp: <b style="color:var(--danger)">₱${cumTe.toLocaleString()}</b></span></div>${overallChanHtml}</div>
         <div class="card"><h2 style="color: #64748b;">Shift Net</h2><div class="net-total" style="font-size: 1.6rem; color: var(--success);">₱${sRev.toLocaleString()}</div><div style="margin-bottom: 8px; border-bottom: 1px solid #eee;"></div>${shiftChanHtml}</div>
         
         <div class="card">
             <h2 style="color: #64748b;">${loyverseLabel}</h2>
-            <div class="net-total" style="font-size:1.6rem; font-weight:800; color:#1e293b;">₱${tPos.toLocaleString()}</div>
+            <div class="net-total adaptive-total" style="font-size:1.6rem; font-weight:800;">₱${tPos.toLocaleString()}</div>
             <div style="margin-bottom: 8px; border-bottom: 1px solid #eee; margin-top: 8px;"></div>
             ${loyChanHtml}
         </div>

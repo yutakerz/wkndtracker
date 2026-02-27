@@ -197,3 +197,13 @@ td { padding: 10px; border-top: 1px solid #f1f5f9; font-size: 0.8rem; }
 body.dark .adaptive-name { 
     color: #ffffff !important; 
 }
+
+/* 2. ADAPTIVE TOTAL COLOR (For Report Cards) */
+.adaptive-total { 
+    color: #1e293b !important; /* Force Dark Blue for Light Mode */
+    transition: color 0.3s ease;
+}
+
+body.dark .adaptive-total { 
+    color: #ffffff !important; /* Force White for Dark Mode */
+}

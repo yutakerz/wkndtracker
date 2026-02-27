@@ -55,7 +55,7 @@ function applyTheme() {
                 #m-body { background-color: #0f172a !important; color: #f1f5f9 !important; }
                 
                 /* Ensure Adaptive Name is White in Dark Mode (Backup Force) */
-                .adaptive-name { color: #ffffff !important; }
+                .adaptive-name, .adaptive-total { color: #ffffff !important; }
             `;
             document.head.appendChild(style);
         }
