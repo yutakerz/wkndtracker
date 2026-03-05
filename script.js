@@ -186,7 +186,7 @@ async function updateLoyverse() {
             auth_user: loggedInUser.email, 
             google_name: loggedInUser.user_metadata.full_name, 
             time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), 
-            date: pstNow.toLocaleDateString(), 
+            date: getFixedDate(pstNow), 
             isoDate: getShiftDate(pstNow) 
         };
 
@@ -298,7 +298,7 @@ async function confirmTransfer() {
     document.getElementById('m-confirm').onclick = async () => {
         const mConfirm = document.getElementById('m-confirm');
         const oldTxt = mConfirm.innerText; mConfirm.innerText = "Processing..."; mConfirm.disabled = true;
-        const entry = { type: 'TRANSFER', amt, chan: from, desc: `Transfer from ${from} to ${to}`, staff: loggedInUser.user_metadata.full_name, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
+        const entry = { type: 'TRANSFER', amt, chan: from, desc: `Transfer from ${from} to ${to}`, staff: loggedInUser.user_metadata.full_name, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: getFixedDate(pstNow), isoDate: getShiftDate(pstNow) };
         const { error } = await _supabase.from('transactions').insert([entry]);
         mConfirm.innerText = oldTxt; mConfirm.disabled = false;
         if (!error) { 
@@ -332,7 +332,7 @@ async function confirmEntry(type) {
         const oldTxt = mConfirm.innerText; mConfirm.innerText = "Processing..."; mConfirm.disabled = true;
         notify("Syncing...", "⏳");
         let urls = []; for(let p of tempPhotos) { if(p) { const url = await uploadPhoto(p); if(url) urls.push(url); } }
-        const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: pstNow.toLocaleDateString(), isoDate: getShiftDate(pstNow) };
+        const entry = { type: type.toUpperCase(), amt, chan, desc, staff: staffInput, auth_user: loggedInUser.email, google_name: loggedInUser.user_metadata.full_name, photos: urls, time: pstNow.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}), date: getFixedDate(pstNow), isoDate: getShiftDate(pstNow) };
         const { error } = await _supabase.from('transactions').insert([entry]);
         mConfirm.innerText = oldTxt; mConfirm.disabled = false;
         if (!error) { 
@@ -711,6 +711,14 @@ function clearForm() {
     } 
 }
 function notify(m, i) { const a = document.getElementById('cool-alert'); document.getElementById('alert-icon').innerText = i || "✅"; document.getElementById('alert-msg').innerText = m; a.classList.add('show'); setTimeout(()=>a.classList.remove('show'), 3000); }
+
+// Hardcoded formatter to prevent phone-specific date errors
+function getFixedDate(dateObj) {
+    const m = dateObj.getMonth() + 1; // Months are 0-indexed
+    const d = dateObj.getDate();
+    const y = dateObj.getFullYear();
+    return `${m}/${d}/${y}`; // Always returns M/D/YYYY (e.g., 3/5/2026)
+}
 
 // Wait for all external scripts (Supabase, OneSignal) to be ready
 window.addEventListener('load', () => {
